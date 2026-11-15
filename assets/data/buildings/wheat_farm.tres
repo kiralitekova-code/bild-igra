@@ -1,0 +1,18 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/rts/building_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"wheat_farm"
+display_name = "Пшеничная ферма"
+footprint = Vector2i(2, 2)
+cost = {"wood": 20}
+allowed_terrain = PackedInt32Array(1)
+color = Color(0.84, 0.72, 0.26, 1)
+height = 0.8
+workers_required = 1
+output_resource = "wheat"
+output_amount = 2
+cycle_seconds = 5.0
+requires_stockpile = true

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/rts/building_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"granary"
+display_name = "Амбар"
+footprint = Vector2i(3, 3)
+cost = {"wood": 30}
+allowed_terrain = PackedInt32Array(0, 1)
+color = Color(0.7, 0.58, 0.38, 1)
+height = 2.5

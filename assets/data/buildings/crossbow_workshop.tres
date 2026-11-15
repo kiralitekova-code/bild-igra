@@ -1,0 +1,19 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/rts/building_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"crossbow_workshop"
+display_name = "Мастерская арбалетов"
+footprint = Vector2i(2, 2)
+cost = {"wood": 30, "stone": 10}
+allowed_terrain = PackedInt32Array(0, 1)
+color = Color(0.42, 0.48, 0.6, 1)
+height = 2.3
+workers_required = 1
+input_cost = {"wood": 2, "iron": 1}
+output_resource = "crossbows"
+output_amount = 1
+cycle_seconds = 8.0
+requires_stockpile = true

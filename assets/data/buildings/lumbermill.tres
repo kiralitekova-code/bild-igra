@@ -1,0 +1,19 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/rts/building_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"lumbermill"
+display_name = "Лесопилка"
+footprint = Vector2i(2, 2)
+cost = {"wood": 20}
+allowed_terrain = PackedInt32Array(0, 1)
+color = Color(0.36, 0.47, 0.28, 1)
+height = 1.8
+workers_required = 1
+output_resource = "wood"
+output_amount = 4
+cycle_seconds = 5.0
+requires_stockpile = true
+wood_gather_radius = 8

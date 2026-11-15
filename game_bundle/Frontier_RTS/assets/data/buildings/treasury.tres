@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/rts/building_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"treasury"
+display_name = "Казна"
+footprint = Vector2i(2, 2)
+cost = {"stone": 20}
+allowed_terrain = PackedInt32Array(0, 1)
+color = Color(0.78, 0.7, 0.42, 1)
+height = 2.8

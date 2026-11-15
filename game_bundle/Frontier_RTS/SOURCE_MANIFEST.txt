@@ -1,0 +1,45 @@
+Frontier RTS — исходный проект, этап 2K
+
+Копия проекта Godot 4.4.1, не готовый браузерный экспорт.
+Открыть project.godot из этой папки как отдельный проект.
+Папка и ZIP обновляются ассистентом при последующих изменениях проекта; фоновой автоматической синхронизации нет.
+
+Состав (33 скопированных файла):
+.gitignore
+ABOUT_GODOT.md
+export_page.html
+export_presets.cfg
+LICENSE
+project.godot
+README.md
+design/GAME_DESIGN_DOCUMENT.md
+autoload/game_manager.gd
+scenes/game.tscn
+scenes/rts_camera.tscn
+scenes/start.tscn
+scripts/game.gd
+scripts/start.gd
+scripts/ui.gd
+scripts/rts/building_definition.gd
+scripts/rts/construction.gd
+scripts/rts/map_grid.gd
+scripts/rts/rts_camera.gd
+assets/audio/README.md
+assets/fonts/README.md
+assets/textures/README.md
+assets/data/buildings/bakery.tres
+assets/data/buildings/bow_workshop.tres
+assets/data/buildings/granary.tres
+assets/data/buildings/iron_mine.tres
+assets/data/buildings/lumbermill.tres
+assets/data/buildings/mill.tres
+assets/data/buildings/quarry.tres
+assets/data/buildings/stockpile.tres
+assets/data/buildings/treasury.tres
+assets/data/buildings/weaponsmith.tres
+assets/data/buildings/wheat_farm.tres
+
+Не включены: кэш .godot, история Git, временные файлы Jabali и навыки ассистента.
+Ресурсы игровой логики и сцен используют res:// пути внутри этой копии.
+Исходный проект успешно собран; отдельная копия не запускалась и не проходила браузерную приёмку.
+ZIP не подтверждён: ранее команды упаковки завершались таймаутами.

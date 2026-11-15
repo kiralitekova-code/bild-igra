@@ -1,0 +1,1544 @@
+
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Ров и Корона</title>
+<style>
+  :root{ --parch:#2b2620; --parch2:#3a332a; --ink:#e8dcc0; --gold:#d8b25a; --blue:#4a7fd4; --red:#b03a3a; --green:#5a9e4a; }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none;}
+  html,body{margin:0;padding:0;overflow:hidden;background:#111;font-family:Georgia,'Times New Roman',serif;color:var(--ink);}
+  #game{position:fixed;inset:0;}
+  canvas{display:block;touch-action:none;}
+  .panel{background:linear-gradient(#3a332a,#2b2620);border:1px solid #5a4f3a;box-shadow:0 2px 8px rgba(0,0,0,.6);border-radius:6px;}
+  #topbar{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;gap:10px;padding:4px 10px;font-size:13px;z-index:10;background:linear-gradient(#3a332aee,#2b2620ee);border-bottom:1px solid #5a4f3a;flex-wrap:wrap;}
+  #topbar .res{display:flex;align-items:center;gap:4px;white-space:nowrap;}
+  #topbar .ico{width:14px;height:14px;border-radius:3px;display:inline-block;}
+  #popbox{margin-left:auto;display:flex;align-items:center;gap:6px;}
+  #popval{font-weight:bold;min-width:34px;text-align:center;border-radius:4px;padding:1px 6px;}
+  #timebox{font-size:12px;color:#b8a888;}
+  #buildbar{position:fixed;left:0;right:0;bottom:0;z-index:10;background:linear-gradient(#2b2620f2,#221d17f2);border-top:1px solid #5a4f3a;padding:4px 6px 6px;}
+  #cats{display:flex;gap:4px;margin-bottom:4px;flex-wrap:wrap;}
+  .cat{padding:3px 10px;font-size:12px;border:1px solid #5a4f3a;border-radius:4px;cursor:pointer;background:#332c23;color:#cbbfa4;}
+  .cat.sel{background:#5a4f3a;color:#fff;}
+  #items{display:flex;gap:4px;overflow-x:auto;padding-bottom:2px;min-height:56px;}
+  .item{min-width:74px;max-width:96px;padding:4px 6px;font-size:11px;border:1px solid #5a4f3a;border-radius:4px;cursor:pointer;background:#332c23;text-align:center;flex:0 0 auto;line-height:1.3;}
+  .item:hover{background:#4a4030;}
+  .item.sel{outline:2px solid var(--gold);}
+  .item .cost{color:#b8a070;font-size:10px;}
+  .item.dis{opacity:.45;}
+  #selfpanel{position:fixed;right:8px;bottom:130px;width:220px;z-index:11;padding:8px;font-size:12px;display:none;}
+  #selfpanel h4{margin:0 0 6px;font-size:13px;color:var(--gold);}
+  #selfpanel .row{display:flex;justify-content:space-between;margin:2px 0;}
+  .btn{display:inline-block;padding:4px 10px;margin:3px 3px 0 0;font-size:12px;border:1px solid #6a5c42;border-radius:4px;background:#4a4030;color:var(--ink);cursor:pointer;}
+  .btn:hover{background:#5f5340;}
+  .btn.warn{background:#5a3232;}
+  .overlay{position:fixed;inset:0;z-index:30;background:rgba(10,8,6,.82);display:flex;align-items:center;justify-content:center;}
+  .menu{width:min(480px,92vw);max-height:88vh;overflow:auto;padding:22px 26px;text-align:center;}
+  .menu h1{margin:0 0 4px;font-size:30px;color:var(--gold);letter-spacing:2px;}
+  .menu h2{margin:0 0 14px;font-size:13px;color:#b8a888;font-weight:normal;letter-spacing:1px;}
+  .menu .big{display:block;width:100%;margin:8px 0;padding:10px;font-size:16px;}
+  .opt{display:flex;justify-content:space-between;align-items:center;margin:6px 0;font-size:13px;text-align:left;}
+  .opt select,.opt input[type=range]{width:55%;}
+  .hidden{display:none!important;}
+  #toasts{position:fixed;top:44px;left:50%;transform:translateX(-50%);z-index:20;pointer-events:none;text-align:center;}
+  .toast{display:inline-block;margin:2px;padding:4px 12px;font-size:13px;background:#2b2620e8;border:1px solid #6a5c42;border-radius:4px;animation:tfade 3.5s forwards;}
+  @keyframes tfade{0%{opacity:0;transform:translateY(-6px)}8%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
+  #minimap{position:fixed;left:8px;bottom:130px;z-index:11;border:1px solid #5a4f3a;border-radius:4px;cursor:pointer;}
+  #speedbox{position:fixed;left:8px;bottom:104px;z-index:11;display:flex;gap:3px;}
+  .sp{padding:2px 8px;font-size:11px;border:1px solid #5a4f3a;border-radius:3px;background:#332c23;cursor:pointer;color:#cbbfa4;}
+  .sp.sel{background:#5a4f3a;color:#fff;}
+  @media (max-width:720px){
+    #minimap{display:none} #speedbox{display:none}
+    #selfpanel{left:8px;right:8px;width:auto;bottom:150px;}
+    #topbar{font-size:11px;gap:6px;}
+  }
+</style>
+</head>
+<body>
+<div id="game"></div>
+
+<div id="topbar" class="hidden">
+  <span class="res"><i class="ico" style="background:#d8b25a"></i><span id="r-gold">0</span></span>
+  <span class="res"><i class="ico" style="background:#8a6a3a"></i><span id="r-wood">0</span></span>
+  <span class="res"><i class="ico" style="background:#9a9a92"></i><span id="r-stone">0</span></span>
+  <span class="res"><i class="ico" style="background:#b06a5a"></i><span id="r-iron">0</span></span>
+  <span class="res"><i class="ico" style="background:#c8a860"></i><span id="r-bread">0</span></span>
+  <span class="res"><i class="ico" style="background:#a83232"></i><span id="r-ale">0</span></span>
+  <span class="res"><i class="ico" style="background:#8898b8"></i><span id="r-hop">0</span></span>
+  <span class="res"><i class="ico" style="background:#c0c0c0"></i><span id="r-weap">0</span></span>
+  <span id="popbox">Народ: <span id="r-pop">0</span> · Популярность <span id="popval">50</span></span>
+  <span id="timebox"></span>
+  <span class="btn" id="btn-pause">⏸ Меню</span>
+</div>
+
+<div id="buildbar" class="hidden">
+  <div id="cats"></div>
+  <div id="items"></div>
+</div>
+
+<div id="selfpanel" class="panel"></div>
+<canvas id="minimap" width="140" height="140"></canvas>
+<div id="speedbox" class="hidden">
+  <span class="sp sel" data-s="1">▶</span><span class="sp" data-s="2">▶▶</span><span class="sp" data-s="3">▶▶▶</span><span class="sp" data-s="0">⏸</span>
+</div>
+<div id="toasts"></div>
+
+<div id="mainmenu" class="overlay">
+  <div class="menu panel">
+    <h1>РОВ И КОРОНА</h1>
+    <h2>строй · корми · вооружайся · осаждай</h2>
+    <button class="btn big" id="btn-start">⚔ Начать: Речная долина vs Барон Ульрик</button>
+    <button class="btn big" id="btn-sandbox">🛠 Песочница</button>
+    <button class="btn big" id="btn-campaign">🏹 Поход: 8 скирмишей</button>
+    <div id="campaign-list" class="hidden" style="text-align:left;margin-top:10px;"></div>
+    <div id="sandbox-opts" class="hidden" style="text-align:left;margin-top:10px;">
+      <div class="opt"><span>Карта</span><select id="o-map">
+        <option value="river">Речная долина</option><option value="hills">Холмы Грейфорда</option>
+        <option value="lakes">Озёрный край</option><option value="forest">Лесной перевал</option></select></div>
+      <div class="opt"><span>Лорды ИИ</span><select id="o-lords"><option>1</option><option>2</option><option>3</option></select></div>
+      <div class="opt"><span>Мирное время</span><select id="o-peace"><option value="120">2 мин</option><option value="300" selected>5 мин</option><option value="600">10 мин</option><option value="99999">без атак</option></select></div>
+      <div class="opt"><span>Стартовое золото</span><select id="o-gold"><option>500</option><option selected>1500</option><option>5000</option></select></div>
+      <button class="btn big" id="btn-sandbox-go">Начать песочницу</button>
+    </div>
+    <p style="font-size:11px;color:#8a7c60;margin-top:14px;">ЛКМ — выбрать/поставить · ПКМ или края экрана — камера · колесо — зум · Q/E — поворот. Тач: тап — выбрать/поставить, тянуть — камера, щипок — зум.</p>
+  </div>
+</div>
+
+<div id="pausemenu" class="overlay hidden">
+  <div class="menu panel">
+    <h1 style="font-size:24px">ПАУЗА</h1>
+    <button class="btn big" id="btn-resume">Продолжить</button>
+    <button class="btn big" id="btn-save">💾 Сохранить матч</button>
+    <button class="btn big" id="btn-load">📂 Загрузить матч</button>
+    <button class="btn big warn" id="btn-quit">Выйти в меню</button>
+    <p style="font-size:11px;color:#8a7c60">Ров и Корона · оригинальная бесплатная игра · все ассеты генерируются процедурно</p>
+  </div>
+</div>
+
+<div id="endmenu" class="overlay hidden">
+  <div class="menu panel">
+    <h1 id="end-title" style="font-size:26px">ПОБЕДА</h1>
+    <p id="end-text" style="font-size:13px;color:#b8a888"></p>
+    <button class="btn big" id="btn-again">Сыграть ещё раз</button>
+    <button class="btn big" id="btn-tomenu">В главное меню</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============================================================
+   РОВ И КОРОНА — браузерная RTS в изометрии.
+   Все ассеты генерируются процедурно: рельеф, деревья, здания,
+   юниты, эффекты, звуки. Ядро симуляции отделено от рендера.
+   ============================================================ */
+
+// ---------- УТИЛИТЫ ----------
+const GRID = 96;
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const rnd=(a=1,b)=>b===undefined?Math.random()*a:a+Math.random()*(b-a);
+const irnd=(a,b)=>Math.floor(rnd(a,b+1));
+const dist2=(x1,y1,x2,y2)=>{const dx=x2-x1,dy=y2-y1;return dx*dx+dy*dy;};
+function mulberry(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+// ---------- ЗВУК (процедурный, WebAudio) ----------
+const Snd=(()=>{
+  let ctx=null, master=null, musicTimer=0;
+  function ensure(){ if(!ctx){ ctx=new (window.AudioContext||window.webkitAudioContext)(); master=ctx.createGain(); master.gain.value=.3; master.connect(ctx.destination);} if(ctx.state==='suspended')ctx.resume(); }
+  function tone(f,dur,type='square',vol=.2,slide=0){ try{ensure();const o=ctx.createOscillator(),g=ctx.createGain(); o.type=type;o.frequency.value=f; if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,f+slide),ctx.currentTime+dur); g.gain.setValueAtTime(vol,ctx.currentTime); g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+dur); o.connect(g);g.connect(master); o.start();o.stop(ctx.currentTime+dur);}catch(e){} }
+  function noise(dur,vol=.25,fc=800){ try{ensure();const n=ctx.createBufferSource(),len=ctx.sampleRate*dur,b=ctx.createBuffer(1,len,ctx.sampleRate),d=b.getChannelData(0); for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len); n.buffer=b; const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=fc; const g=ctx.createGain();g.gain.value=vol; n.connect(f);f.connect(g);g.connect(master); n.start();}catch(e){} }
+  return {
+    click:()=>tone(600,.05,'square',.06),
+    place:()=>{tone(220,.12,'triangle',.2);noise(.08,.1,500);},
+    chop:()=>noise(.09,.15,1400),
+    sword:()=>{noise(.07,.18,3000);tone(900,.06,'sawtooth',.05,-400);},
+    arrow:()=>noise(.12,.08,2400),
+    boom:()=>{noise(.4,.3,300);tone(70,.4,'sine',.25,-30);},
+    horn:()=>{tone(180,.5,'sawtooth',.15);setTimeout(()=>tone(240,.6,'sawtooth',.15),180);},
+    win:()=>[440,554,659,880].forEach((f,i)=>setTimeout(()=>tone(f,.3,'triangle',.18),i*140)),
+    lose:()=>[392,330,262,196].forEach((f,i)=>setTimeout(()=>tone(f,.4,'triangle',.18),i*200)),
+    coin:()=>tone(1100,.06,'square',.07),
+    fire:()=>noise(.3,.12,900),
+    music(dt){ // фоновая мелодия
+      musicTimer-=dt;
+      if(musicTimer<=0){
+        const scale=[220,246.9,261.6,293.7,329.6,392,440];
+        const n=scale[irnd(0,scale.length-1)];
+        tone(n,1.6,'sine',.04); tone(n/2,1.8,'triangle',.03);
+        musicTimer=rnd(2.2,4.5);
+      }
+    }
+  };
+})();
+
+// ---------- ДАННЫЕ: ЗДАНИЯ ----------
+// prod:{in,out,per} — цикл производства в секундах; farm — своё поле; near — нужен ресурс рядом
+const B={
+  keep:      {n:'Ратуша-донжон', cat:'Замок', w:3,h:3, hp:3000, cost:{}, desc:'Сердце замка. Гибель лорда — поражение.'},
+  hut:       {n:'Лачуга', cat:'Замок', w:2,h:2, hp:120, cost:{wood:3}, housing:8, desc:'+8 мест для крестьян'},
+  stockpile: {n:'Склад', cat:'Замок', w:2,h:2, hp:300, cost:{wood:6}, desc:'Хранение сырья'},
+  granary:   {n:'Амбар', cat:'Замок', w:2,h:2, hp:300, cost:{wood:8}, desc:'Хранение еды'},
+  armoury:   {n:'Оружейный склад', cat:'Замок', w:2,h:2, hp:400, cost:{wood:10,stone:4}, desc:'Хранение оружия'},
+  treasury:  {n:'Казна', cat:'Замок', w:2,h:2, hp:400, cost:{stone:10}, desc:'Хранение золота'},
+  lumber:    {n:'Лесопилка', cat:'Промыслы', w:2,h:2, hp:180, cost:{wood:4}, worker:1, prod:{out:{wood:3},per:8}, near:'tree', desc:'Дерево из леса'},
+  quarry:    {n:'Каменоломня', cat:'Промыслы', w:2,h:2, hp:220, cost:{wood:8}, worker:1, prod:{out:{stone:2},per:9}, near:'rock', desc:'Камень из залежей'},
+  ox:        {n:'Воловья упряжка', cat:'Промыслы', w:1,h:1, hp:80, cost:{wood:4}, worker:1, prod:{out:{stone:1},per:14}, desc:'Помогает возить камень'},
+  ironmine:  {n:'Железная шахта', cat:'Промыслы', w:2,h:2, hp:250, cost:{wood:12}, worker:1, prod:{out:{iron:1},per:10}, near:'iron', desc:'Железная руда'},
+  goldmine:  {n:'Золотая шахта', cat:'Промыслы', w:2,h:2, hp:250, cost:{wood:12}, worker:1, prod:{out:{gold:8},per:12}, near:'gold', desc:'Золото'},
+  pitchrig:  {n:'Смоляная вышка', cat:'Промыслы', w:1,h:1, hp:120, cost:{wood:6}, worker:1, prod:{out:{pitch:1},per:12}, desc:'Смола для рва и огня'},
+  mason:     {n:'Каменщик', cat:'Промыслы', w:2,h:2, hp:200, cost:{wood:8}, worker:1, prod:{in:{stone:1},out:{stone:1},per:12}, desc:'Блоки для каменных стен'},
+  wheatfarm: {n:'Пшеничная ферма', cat:'Фермы', w:3,h:3, hp:150, cost:{wood:6}, worker:1, farm:1, prod:{out:{wheat:2},per:10}, desc:'Пшеница'},
+  mill:      {n:'Мельница', cat:'Фермы', w:2,h:2, hp:180, cost:{wood:10}, worker:1, prod:{in:{wheat:2},out:{flour:2},per:8}, desc:'Пшеница → мука'},
+  bakery:    {n:'Пекарня', cat:'Фермы', w:2,h:2, hp:160, cost:{wood:8}, worker:1, prod:{in:{flour:1},out:{bread:2},per:7}, desc:'Мука → хлеб'},
+  orchard:   {n:'Яблоневый сад', cat:'Фермы', w:3,h:3, hp:140, cost:{wood:5}, worker:1, farm:1, prod:{out:{apple:2},per:11}, desc:'Яблоки'},
+  dairy:     {n:'Молочная ферма', cat:'Фермы', w:3,h:3, hp:150, cost:{wood:6}, worker:1, farm:1, prod:{out:{cheese:2},per:12}, desc:'Сыр'},
+  meatfarm:  {n:'Мясная ферма', cat:'Фермы', w:3,h:3, hp:150, cost:{wood:6}, worker:1, farm:1, prod:{out:{meat:2},per:13}, desc:'Мясо'},
+  hunter:    {n:'Хижина охотника', cat:'Фермы', w:1,h:1, hp:100, cost:{wood:4}, worker:1, prod:{out:{meat:1},per:12}, near:'tree', desc:'Дичь из леса'},
+  hopsfarm:  {n:'Хмелевая ферма', cat:'Фермы', w:3,h:3, hp:140, cost:{wood:5}, worker:1, farm:1, prod:{out:{hops:2},per:11}, desc:'Хмель'},
+  brewery:   {n:'Пивоварня', cat:'Фермы', w:2,h:2, hp:170, cost:{wood:10}, worker:1, prod:{in:{hops:1},out:{ale:2},per:9}, desc:'Хмель → эль'},
+  well:      {n:'Колодец', cat:'Город', w:1,h:1, hp:200, cost:{stone:4}, desc:'Тушит пожары рядом'},
+  church:    {n:'Церковь', cat:'Город', w:3,h:3, hp:500, cost:{wood:20,stone:20}, worker:1, prod:{in:{candle:1},per:60}, faith:1, desc:'Службы: +популярность (нужны свечи)'},
+  candlemk:  {n:'Свечная мастерская', cat:'Город', w:2,h:2, hp:150, cost:{wood:8}, worker:1, prod:{out:{candle:1},per:14}, desc:'Свечи для церкви'},
+  apothecary:{n:'Аптека', cat:'Город', w:2,h:2, hp:180, cost:{wood:10}, worker:1, prod:{in:{herbs:1},per:40}, desc:'Лечит от болезней (нужны травы)'},
+  herbhut:   {n:'Хижина травника', cat:'Город', w:1,h:1, hp:90, cost:{wood:4}, worker:1, prod:{out:{herbs:1},per:16}, near:'tree', desc:'Травы'},
+  tavern:    {n:'Таверна', cat:'Город', w:2,h:2, hp:200, cost:{wood:12}, worker:1, prod:{in:{ale:1},per:30}, ale:12, desc:'Эль народу: +популярность'},
+  market:    {n:'Рынок', cat:'Город', w:2,h:2, hp:250, cost:{wood:12}, worker:1, trade:true, desc:'Торговля: продажа и покупка'},
+  court:     {n:'Суд', cat:'Город', w:2,h:2, hp:220, cost:{wood:10,stone:6}, good:1, desc:'«Хорошее» право: +поп, −выработка'},
+  garden:    {n:'Сад садовника', cat:'Город', w:2,h:2, hp:120, cost:{wood:6}, good:1, desc:'Красота: +популярность'},
+  prison:    {n:'Тюрьма', cat:'Город', w:2,h:2, hp:300, cost:{stone:12}, bad:1, desc:'«Страх»: +выработка, −поп'},
+  gallows:   {n:'Помост для казней', cat:'Город', w:1,h:1, hp:120, cost:{wood:8}, bad:1, desc:'«Страх»: +выработка, −поп'},
+  signal:    {n:'Сигнальный костёр', cat:'Город', w:1,h:1, hp:100, cost:{wood:5}, desc:'Предупреждает об атаке'},
+  fletcher:  {n:'Мастерская луков', cat:'Оружие', w:2,h:2, hp:180, cost:{wood:10}, worker:1, prod:{in:{wood:1},out:{bows:1},per:10}, desc:'Луки'},
+  xbowmk:    {n:'Мастерская арбалетов', cat:'Оружие', w:2,h:2, hp:200, cost:{wood:12,iron:2}, worker:1, prod:{in:{wood:1,iron:1},out:{xbows:1},per:14}, desc:'Арбалеты'},
+  spearmk:   {n:'Мастерская копий', cat:'Оружие', w:2,h:2, hp:180, cost:{wood:10}, worker:1, prod:{in:{wood:1},out:{spears:1,pikes:1},per:12}, desc:'Копья и пики'},
+  smith:     {n:'Оружейная', cat:'Оружие', w:2,h:2, hp:220, cost:{wood:10,iron:4}, worker:1, prod:{in:{iron:1},out:{swords:1},per:12}, desc:'Мечи'},
+  macesmith: {n:'Кузница булав', cat:'Оружие', w:2,h:2, hp:200, cost:{wood:8,iron:2}, worker:1, prod:{in:{iron:1},out:{maces:1},per:11}, desc:'Булавы'},
+  tannery:   {n:'Кожевня', cat:'Оружие', w:2,h:2, hp:180, cost:{wood:10}, worker:1, prod:{out:{larmour:1},per:12}, desc:'Кожаная броня'},
+  armorer:   {n:'Бронник', cat:'Оружие', w:2,h:2, hp:220, cost:{wood:10,iron:4}, worker:1, prod:{in:{iron:2},out:{harmour:1},per:16}, desc:'Латы'},
+  barracks:  {n:'Казармы', cat:'Армия', w:3,h:3, hp:600, cost:{wood:15,stone:10}, recruit:true, desc:'Пехота'},
+  archery:   {n:'Тир лучников', cat:'Армия', w:2,h:2, hp:300, cost:{wood:12}, recruit:true, desc:'Лучники и арбалетчики'},
+  stables:   {n:'Конюшни', cat:'Армия', w:3,h:3, hp:400, cost:{wood:16,stone:8}, recruit:true, desc:'Кавалерия'},
+  mercpost:  {n:'Наёмный пост', cat:'Армия', w:2,h:2, hp:250, cost:{wood:10}, recruit:true, desc:'Наёмники за золото'},
+  engshop:   {n:'Мастерская инженеров', cat:'Армия', w:2,h:2, hp:300, cost:{wood:14,stone:8}, recruit:true, desc:'Инженеры и осада'},
+  kennel:    {n:'Псарня', cat:'Армия', w:1,h:1, hp:150, cost:{wood:8}, recruit:true, desc:'Боевые псы'},
+  wwall:     {n:'Деревянная стена', cat:'Оборона', w:1,h:1, hp:250, cost:{wood:2}, wall:1, drag:true, desc:'Дешёвая стена'},
+  swall:     {n:'Каменная стена', cat:'Оборона', w:1,h:1, hp:800, cost:{stone:3}, wall:2, drag:true, desc:'Крепкая стена'},
+  crenel:    {n:'Зубчатая стена', cat:'Оборона', w:1,h:1, hp:900, cost:{stone:4}, wall:3, drag:true, desc:'Стена с зубцами для стрелков'},
+  towerW:    {n:'Деревянная башня', cat:'Оборона', w:2,h:2, hp:400, cost:{wood:12}, tower:1, desc:'Позиция стрелков'},
+  towerS:    {n:'Малая каменная башня', cat:'Оборона', w:2,h:2, hp:900, cost:{stone:20}, tower:2, desc:'Позиция стрелков'},
+  towerB:    {n:'Большая каменная башня', cat:'Оборона', w:3,h:3, hp:1600, cost:{stone:40}, tower:3, desc:'Мощная башня'},
+  gate:      {n:'Ворота', cat:'Оборона', w:1,h:2, hp:600, cost:{stone:8,wood:4}, gate:true, desc:'Проезд для своих'},
+  bridge:    {n:'Подъёмный мост', cat:'Оборона', w:2,h:1, hp:300, cost:{wood:8}, desc:'Через ров, поднимается в осаде'},
+  moat:      {n:'Ров', cat:'Оборона', w:1,h:1, hp:99999, cost:{}, moat:true, drag:true, desc:'Не пройти, пока не засыплют'},
+  pitchmoat: {n:'Смоляной ров', cat:'Оборона', w:1,h:1, hp:99999, cost:{pitch:1}, moat:true, fire:true, drag:true, desc:'Вспыхивает от стрел'},
+  wolfpit:   {n:'Волчья яма', cat:'Оборона', w:1,h:1, hp:100, cost:{wood:2}, trap:true, desc:'Ловушка для пехоты'},
+  barricade: {n:'Баррикада', cat:'Оборона', w:1,h:1, hp:350, cost:{wood:3}, wall:1, drag:true, desc:'Быстрая преграда'},
+  brazier:   {n:'Жаровня', cat:'Оборона', w:1,h:1, hp:120, cost:{wood:4}, firearrow:true, desc:'Горящие стрелы рядом'},
+  oilpot:    {n:'Котёл кипящего масла', cat:'Оборона', w:1,h:1, hp:200, cost:{iron:4}, oil:true, desc:'Льёт масло на штурмующих'},
+  hoarding:  {n:'Хоардинг (навес)', cat:'Оборона', w:1,h:1, hp:200, cost:{wood:4}, desc:'Защита стрелков на стене'},
+  dogout:    {n:'Сеноплюй', cat:'Оборона', w:1,h:1, hp:150, cost:{wood:5}, desc:'Сбрасывает лестницы штурмующих'},
+};
+const CATS=['Замок','Промыслы','Фермы','Город','Оружие','Армия','Оборона'];
+
+// ---------- ДАННЫЕ: ВОЙСКА ----------
+const U={
+  spearman: {n:'Копейщик', b:'barracks', gold:20, gear:{spears:1}, hp:60, dmg:6, rng:1, spd:1.5, arm:1, dig:true, desc:'Роет ров, носит лестницы'},
+  pikeman:  {n:'Пикинёр', b:'barracks', gold:30, gear:{pikes:1,larmour:1}, hp:80, dmg:8, rng:1.3, spd:1.2, arm:3, desc:'Стена пик против конницы'},
+  swordsman:{n:'Мечник', b:'barracks', gold:40, gear:{swords:1,harmour:1}, hp:140, dmg:14, rng:1, spd:1.0, arm:6, desc:'Тяжёлая пехота, рубит стены'},
+  maceman:  {n:'Булавник', b:'barracks', gold:35, gear:{maces:1,larmour:1}, hp:90, dmg:12, rng:1, spd:1.7, arm:2, charge:true, desc:'Быстрый ударный, рывок'},
+  banner:   {n:'Знаменосец', b:'barracks', gold:40, gear:{}, hp:70, dmg:2, rng:1, spd:1.3, arm:2, aura:'def', desc:'Аура: соседям меньше урона'},
+  trumpeter:{n:'Трубач', b:'barracks', gold:40, gear:{}, hp:70, dmg:2, rng:1, spd:1.3, arm:2, aura:'spd', desc:'Аура: соседям +скорость'},
+  archer:   {n:'Лучник', b:'archery', gold:25, gear:{bows:1}, hp:45, dmg:7, rng:9, spd:1.4, arm:0, ranged:true, desc:'Быстрая стрельба'},
+  xbowman:  {n:'Арбалетчик', b:'archery', gold:40, gear:{xbows:1,larmour:1}, hp:55, dmg:16, rng:8, spd:1.1, arm:1, ranged:true, pierce:true, desc:'Пробивает латы'},
+  knight:   {n:'Рыцарь', b:'stables', gold:60, gear:{swords:1,harmour:1,horses:1}, hp:180, dmg:18, rng:1, spd:2.4, arm:7, cav:true, charge:true, desc:'Элитная кавалерия'},
+  mountedS: {n:'Конный копейщик', b:'stables', gold:45, gear:{spears:1,larmour:1,horses:1}, hp:120, dmg:10, rng:1.3, spd:2.3, arm:4, cav:true, desc:'Быстрый налёт'},
+  mountedA: {n:'Конный лучник', b:'stables', gold:50, gear:{bows:1,horses:1}, hp:80, dmg:8, rng:7, spd:2.2, arm:1, cav:true, ranged:true, desc:'Бьёт и отходит'},
+  sling:    {n:'Пращник', b:'mercpost', gold:15, gear:{}, hp:40, dmg:6, rng:7, spd:1.5, arm:0, ranged:true, desc:'Наёмник: дешёвый стрелок'},
+  flamethr: {n:'Огнемётчик', b:'mercpost', gold:60, gear:{}, hp:70, dmg:20, rng:1.5, spd:1.4, arm:1, fire:true, desc:'Наёмник: огонь по зданиям'},
+  assassin: {n:'Ассасин', b:'mercpost', gold:80, gear:{}, hp:90, dmg:25, rng:1, spd:2.0, arm:2, climb:true, desc:'Наёмник: лезет на стены, охотится на лордов'},
+  monk:     {n:'Монах-целитель', b:'mercpost', gold:50, gear:{}, hp:60, dmg:0, rng:5, spd:1.3, arm:0, healer:true, desc:'Наёмник: лечит своих'},
+  dervish:  {n:'Дервиш', b:'mercpost', gold:70, gear:{}, hp:100, dmg:14, rng:1.2, spd:2.2, arm:2, whirl:true, desc:'Наёмник: вихревая атака'},
+  engineer: {n:'Инженер', b:'engshop', gold:30, gear:{}, hp:50, dmg:2, rng:1, spd:1.3, arm:0, desc:'Строит осадные машины в поле'},
+  dog:      {n:'Боевой пёс', b:'kennel', gold:15, gear:{}, hp:35, dmg:9, rng:1, spd:2.6, arm:0, desc:'Быстрый, слабый'},
+  lord:     {n:'Лорд', b:'keep', gold:0, gear:{}, hp:500, dmg:25, rng:1.2, spd:1.4, arm:8, lord:true, desc:'Его смерть — поражение'},
+};
+// ---------- ОСАДНЫЕ МАШИНЫ (строит инженер в поле) ----------
+const SIEGE={
+  catapult: {n:'Катапульта', gold:120, hp:200, dmg:50, rng:11, spd:0.6, arm:2, siege:true, desc:'Навесной обстрел стен и зданий'},
+  trebuchet:{n:'Требушет', gold:200, hp:250, dmg:90, rng:14, spd:0.45, arm:2, siege:true, desc:'Тяжёлый обстрел'},
+  wolf:     {n:'«Боевой волк»', gold:350, hp:300, dmg:140, rng:15, spd:0.35, arm:3, siege:true, desc:'Тяжёлый требушет'},
+  ram:      {n:'Таран', gold:80, hp:400, dmg:40, rng:1, spd:0.9, arm:5, siege:true, desc:'Ломает ворота и стены'},
+  mantlet:  {n:'Мантелет', gold:30, hp:300, dmg:0, rng:0, spd:1.0, arm:8, siege:true, desc:'Щит от стрел'},
+  stower:   {n:'Осадная башня', gold:250, hp:600, dmg:0, rng:0, spd:0.5, arm:4, siege:true, desc:'Подвозит пехоту к стенам'},
+  fballista:{n:'Огненная баллиста', gold:150, hp:180, dmg:40, rng:10, spd:0.8, arm:1, siege:true, fire:true, desc:'Поджигает здания'},
+  cart:     {n:'Горящая телега', gold:40, hp:60, dmg:60, rng:1, spd:1.8, arm:0, siege:true, fire:true, kamikaze:true, desc:'Врезается в ворота и вспыхивает'},
+};
+Object.assign(U, SIEGE);
+
+// ---------- СОСТОЯНИЕ ----------
+let S=null;
+let speed=1;
+const canvas=document.getElementById('game');
+const ctx2d=canvas.getContext('2d');
+let W=0,H=0;
+function resize(){W=innerWidth;H=innerHeight;canvas.width=W*devicePixelRatio;canvas.height=H*devicePixelRatio;canvas.style.width=W+'px';canvas.style.height=H+'px';ctx2d.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);}
+addEventListener('resize',resize);resize();
+
+const cam={x:GRID/2,y:GRID/2,zoom:26,rot:0};
+function iso(x,y){
+  const dx=x-cam.x, dy=y-cam.y;
+  const c=Math.cos(cam.rot), s=Math.sin(cam.rot);
+  const rx=dx*c-dy*s, ry=dx*s+dy*c;
+  return [W/2+(rx-ry)*cam.zoom, H/2+(rx+ry)*cam.zoom*0.5];
+}
+function screenToWorld(sx,sy){
+  const px=(sx-W/2)/cam.zoom, py=(sy-H/2)/(cam.zoom*0.5);
+  const c=Math.cos(-cam.rot), s=Math.sin(-cam.rot);
+  const rx=px*c-py*s, ry=px*s+py*c;
+  return [rx+ry+cam.x, ry-rx+cam.y];
+}
+
+// ---------- ГЕНЕРАЦИЯ КАРТЫ ----------
+function genTerrain(mapKind,seed){
+  const R=mulberry(seed);
+  const h=new Float32Array(GRID*GRID), res=new Uint8Array(GRID*GRID);
+  const g=16, gs=GRID/g, noise=[];
+  for(let i=0;i<(g+1)*(g+1);i++)noise.push(R());
+  const val=(x,y)=>{
+    const gx=x/gs, gy=y/gs, x0=Math.floor(gx), y0=Math.floor(gy), fx=gx-x0, fy=gy-y0;
+    const sm=t=>t*t*(3-2*t);
+    const a=noise[y0*(g+1)+x0],b=noise[y0*(g+1)+x0+1],c2=noise[(y0+1)*(g+1)+x0],d=noise[(y0+1)*(g+1)+x0+1];
+    return lerp(lerp(a,b,sm(fx)),lerp(c2,d,sm(fx)),sm(fy));
+  };
+  for(let y=0;y<GRID;y++)for(let x=0;x<GRID;x++){
+    let v=val(x,y)*.7+val(x*.5+13,y*.5+7)*.3;
+    if(mapKind==='hills')v=v*1.4-0.15;
+    if(mapKind==='forest')v=v*.6+.15;
+    h[y*GRID+x]=v;
+  }
+  if(mapKind==='river'){
+    for(let y=0;y<GRID;y++){const cx=GRID/2+Math.sin(y*0.12)*10;for(let x=0;x<GRID;x++){if(Math.abs(x-cx)<3.2)h[y*GRID+x]=-1;}}
+  }
+  if(mapKind==='lakes'){
+    for(let i=0;i<5;i++){const lx=10+R()*(GRID-20),ly=10+R()*(GRID-20),r=4+R()*5;
+      for(let y=0;y<GRID;y++)for(let x=0;x<GRID;x++)if(dist2(x,y,lx,ly)<r*r)h[y*GRID+x]=-1;}
+  }
+  function scatter(type,count,cluster){
+    for(let c=0;c<count;c++){
+      const cx=irnd(3,GRID-4),cy=irnd(3,GRID-4);
+      if(h[cy*GRID+cx]<0.05)continue;
+      for(let n=0;n<cluster;n++){
+        const x=clamp(cx+irnd(-2,2),0,GRID-1),y=clamp(cy+irnd(-2,2),0,GRID-1);
+        if(h[y*GRID+x]>=0.05)res[y*GRID+x]=type;
+      }
+    }
+  }
+  scatter(1,mapKind==='forest'?90:50,mapKind==='forest'?8:4);
+  scatter(2,mapKind==='forest'?8:18,3);
+  scatter(3,8,2);
+  if(mapKind!=='forest')scatter(4,4,2);
+  return {h,res};
+}
+function isWater(x,y){return S.terrain.h[y*GRID+x]<0;}
+
+// ---------- СОЗДАНИЕ МАТЧА ----------
+function newMatch(opts){
+  const seed=Date.now()%100000;
+  const terrain=genTerrain(opts.map,seed);
+  S={
+    t:0, seed, map:opts.map, peace:opts.peace, over:false, paused:false,
+    terrain,
+    occ:new Int16Array(GRID*GRID).fill(-1),
+    units:[], buildings:[], effects:[], ladders:[], nextId:1,
+    players:[], sel:null, selUnits:[], buildSel:null,
+  };
+  const colors=['#4a7fd4','#b03a3a','#5a9e4a','#b8862a'];
+  const lords=['Вы','Барон Ульрик Грейвуд','Графиня Мирра Эшфорд','Сир Гаррет Вольф','Епископ Олдрик'];
+  const chars=['turtle','eco','raider','sieger'];
+  const mkRes=g=>({gold:g,wood:60,stone:40,iron:0,pitch:0,wheat:0,flour:0,herbs:0,bread:20,apple:10,cheese:5,meat:5,hops:0,ale:0,candle:0,bows:0,xbows:0,spears:0,pikes:0,swords:0,maces:0,larmour:0,harmour:0,horses:0});
+  S.players.push({id:0,name:lords[0],color:colors[0],res:mkRes(opts.gold),
+    pop:0,popMax:0,popularity:60,tax:0,ration:2,immigr:0});
+  const nAI=opts.lords;
+  for(let i=1;i<=nAI;i++){
+    S.players.push({id:i,name:lords[i],color:colors[i],char:chars[(i-1)%4],res:mkRes(1500+i*500),
+      pop:0,popMax:0,popularity:60,tax:0,ration:2,immigr:0,
+      nextWave: opts.peace + i*45*1000, waveN:0, buildT:0});
+  }
+  const spots=[[24,72],[72,24],[24,24],[72,72]];
+  S.players.forEach((p,i)=>{
+    let [bx,by]=spots[i===0?0:i-1]||spots[i%4];
+    if(terrain.h[by*GRID+bx]<0){
+      outer:for(let r=1;r<25;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+        const x=bx+dx,y=by+dy;
+        if(x>2&&y>2&&x<GRID-3&&y<GRID-3&&terrain.h[y*GRID+x]>=0){bx=x;by=y;break outer;}
+      }
+    }
+    p.baseX=bx;p.baseY=by;
+    addBuilding('keep',bx,by,p.id);
+    for(let k=0;k<3;k++)addBuilding('hut',bx+4+k*2,by,p.id);
+    addBuilding('stockpile',bx-3,by,p.id);
+    addBuilding('granary',bx-3,by+2,p.id);
+    if(i===0)for(let k=0;k<6;k++)spawnUnit('peasant',bx+rnd(-2,2),by+rnd(-2,2),0);
+  });
+  S.players.forEach(p=>{ const u=spawnUnit('lord',p.baseX+1,p.baseY+4,p.id); p.lordId=u.id; });
+  return S;
+}
+
+// ---------- ЗДАНИЯ ----------
+function canPlace(key,x,y){
+  const b=B[key];
+  for(let dy=0;dy<b.h;dy++)for(let dx=0;dx<b.w;dx++){
+    const tx=x+dx,ty=y+dy;
+    if(tx<0||ty<0||tx>=GRID||ty>=GRID)return false;
+    const i=ty*GRID+tx;
+    if(S.occ[i]>=0)return false;
+    if(S.terrain.h[i]<0)return false;
+  }
+  return true;
+}
+function payCost(p,cost){ for(const k in cost){ if((p.res[k]||0)<cost[k])return false; } for(const k in cost)p.res[k]-=cost[k]; return true; }
+function findNearRes(type,x,y){
+  const want=type==='tree'?1:type==='rock'?2:type==='iron'?3:4;
+  for(let r=1;r<12;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+    const tx=x+dx,ty=y+dy;
+    if(tx<0||ty<0||tx>=GRID||ty>=GRID)continue;
+    if(S.terrain.res[ty*GRID+tx]===want)return [tx,ty];
+  }
+  return null;
+}
+function addBuilding(key,x,y,pid){
+  const b=B[key];
+  const bd={id:S.nextId++,key,x,y,pid,hp:b.hp,maxHp:b.hp,worker:0,prodT:0,fire:0,fireT:0,moatFilled:false};
+  for(let dy=0;dy<b.h;dy++)for(let dx=0;dx<b.w;dx++)S.occ[(y+dy)*GRID+(x+dx)]=bd.id;
+  if(b.near)bd.resTile=findNearRes(b.near,x,y);
+  if(b.farm){
+    bd.field=[];
+    for(let i=0;i<4;i++){
+      const tx=clamp(x+b.w+1+(i%2)*2,0,GRID-3), ty=clamp(y-1+Math.floor(i/2)*2,0,GRID-3);
+      if(S.terrain.h[ty*GRID+tx]>=0&&S.occ[ty*GRID+tx]<0)bd.field.push([tx,ty]);
+    }
+  }
+  S.buildings.push(bd);
+  recount(pid);
+  return bd;
+}
+function removeBuilding(bd){
+  const b=B[bd.key];
+  for(let dy=0;dy<b.h;dy++)for(let dx=0;dx<b.w;dx++){
+    const i=(bd.y+dy)*GRID+(bd.x+dx);
+    if(S.occ[i]===bd.id)S.occ[i]=-1;
+  }
+  S.buildings=S.buildings.filter(x=>x!==bd);
+  recount(bd.pid);
+}
+function recount(pid){
+  const p=S.players[pid];
+  let popMax=0,slots=0,workers=0,good=0,bad=0,aleCap=0,faith=0;
+  for(const bd of S.buildings){ if(bd.pid!==pid)continue; const b=B[bd.key];
+    if(b.housing)popMax+=b.housing;
+    if(b.worker){slots+=b.worker; if(bd.worker>0)workers+=b.worker;}
+    if(b.good)good++; if(b.bad)bad++;
+    if(b.ale)aleCap+=b.ale;
+    if(b.faith)faith++;
+  }
+  p.popMax=popMax;p.good=good;p.bad=bad;p.aleCap=aleCap;p.faith=faith;
+  p.workers=workers;p.slots=slots;
+}
+
+// ---------- ЮНИТЫ ----------
+function spawnUnit(key,x,y,pid){
+  const d=U[key];
+  const u={id:S.nextId++,key,x:clamp(x,0,GRID-1),y:clamp(y,0,GRID-1),pid,hp:d.hp,maxHp:d.hp,tx:x,ty:y,state:'idle',target:null,cd:0,job:null};
+  S.units.push(u);
+  return u;
+}
+function killUnit(u){
+  S.units=S.units.filter(x=>x!==u);
+  S.effects.push({x:u.x,y:u.y,t:.8,kind:'blood'});
+  if(u.key==='lord'){
+    const p=S.players[u.pid]; p.dead=true;
+    toast(`${p.name} пал!`);
+    checkEnd();
+  }
+}
+function checkEnd(){
+  const alive=S.players.filter(p=>!p.dead);
+  if(!S.over&&alive.length===1){ endGame(alive[0].id===0); }
+}
+
+// ---------- ЭКОНОМИКА ----------
+function econTick(dt){
+  // аура скорости трубача
+  for(const p of S.players){
+    p.auraSpd=S.units.some(u=>u.pid===p.id&&u.key==='trumpeter');
+  }
+  for(const p of S.players){
+    if(p.dead)continue;
+    // популярность
+    let pop=50 - p.tax*7;
+    const foodTypes=['bread','apple','cheese','meat'].filter(f=>(p.res[f]||0)>0).length;
+    pop+=[-12,-4,4,10,16,22][p.ration]*(1+foodTypes*0.15);
+    if(p.aleCap>0&&p.pop>0)pop+=Math.min(12,(p.aleCap/Math.max(1,p.pop))*12);
+    if(p.faith>0)pop+=Math.min(8,p.faith*5);
+    pop+=p.good*3 - p.bad*4;
+    if(p.housingShort)pop-=5;
+    if(p.sick)pop-=8;
+    p.popularity=lerp(p.popularity,clamp(pop,0,100),dt*0.1);
+    // налоги
+    p.res.gold=Math.max(0,p.res.gold+(p.tax>0?p.tax*p.pop*0.02*dt:-p.pop*0.01*dt));
+    // пайки
+    if(p.pop>0){
+      const need=p.pop*0.01*p.ration*dt;
+      let left=need;
+      for(const f of ['bread','apple','cheese','meat']){ const take=Math.min(p.res[f]||0,left); p.res[f]-=take; left-=take; if(left<=0)break; }
+      p.starving=left>need*0.5;
+      if(p.starving)p.popularity-=dt*2;
+    }
+    // иммиграция
+    p.housingShort=false;
+    if(p.popularity>50&&p.pop<p.popMax)p.immigr+=dt*p.popularity*0.01;
+    else if(p.pop>=p.popMax)p.housingShort=true;
+    if(p.immigr>=1&&p.pop<p.popMax){ p.immigr=0;p.pop++; spawnUnit('peasant',p.baseX+rnd(-2,2),p.baseY+rnd(-2,2),p.id); }
+    if(p.popularity<25&&p.pop>4&&Math.random()<dt*0.05)p.pop--;
+  }
+  // производство
+  for(const bd of S.buildings){
+    if(bd.fire>0){ bd.fire-=dt; bd.hp-=dt*8; if(bd.hp<=0){removeBuilding(bd);continue;} }
+    const b=B[bd.key];
+    if(!b.prod)continue;
+    const p=S.players[bd.pid];
+    if(p.dead)continue;
+    if(b.worker&&!bd.worker){
+      const free=S.units.find(u=>u.pid===bd.pid&&u.key==='peasant'&&(!u.job));
+      if(free){ bd.worker=1; free.job={bdId:bd.id}; }
+      continue;
+    }
+    if(b.worker&&!bd.worker)continue;
+    if(b.near&&!bd.resTile){ bd.resTile=findNearRes(b.near,bd.x,bd.y); if(!bd.resTile)continue; }
+    const rate=1+(p.bad||0)*0.15-(p.good||0)*0.1;
+    bd.prodT+=dt*rate;
+    if(bd.prodT>=b.prod.per){
+      bd.prodT=0;
+      if(b.prod.in){
+        let ok=true;
+        for(const k in b.prod.in){ if((p.res[k]||0)<b.prod.in[k]){ok=false;break;} }
+        if(!ok){bd.prodT=b.prod.per*0.5;continue;}
+        for(const k in b.prod.in)p.res[k]-=b.prod.in[k];
+      }
+      for(const k in b.prod.out)p.res[k]=(p.res[k]||0)+b.prod.out[k];
+      if(bd.pid===0&&bd.key==='lumber'&&Math.random()<0.25)Snd.chop();
+    }
+  }
+}
+
+// ---------- НАЁМ ----------
+function tryRecruit(ukey,pid,nearX,nearY){
+  const p=S.players[pid],d=U[ukey];
+  const cost={gold:d.gold,...(d.gear||{})};
+  if(!payCost(p,cost))return null;
+  return spawnUnit(ukey,nearX+rnd(-1,1),nearY+rnd(-1,1),pid);
+}
+
+// ---------- БОЙ ----------
+function findEnemy(u,r){
+  let best=null,bd=r*r;
+  for(const e of S.units){
+    if(e.pid===u.pid||S.players[e.pid].dead)continue;
+    const d=dist2(u.x,u.y,e.x,e.y);
+    if(d<bd){bd=d;best=e;}
+  }
+  if(!best){
+    for(const b of S.buildings){
+      if(b.pid===u.pid)continue;
+      const cx=b.x+B[b.key].w/2, cy=b.y+B[b.key].h/2;
+      const d=dist2(u.x,u.y,cx,cy);
+      if(d<bd){bd=d;best=b;}
+    }
+  }
+  return best;
+}
+function findEnemyBuilding(u,r){
+  let best=null,bd=r*r;
+  for(const b of S.buildings){
+    if(b.pid===u.pid)continue;
+    const cx=b.x+B[b.key].w/2, cy=b.y+B[b.key].h/2;
+    const d=dist2(u.x,u.y,cx,cy);
+    if(d<bd){bd=d;best=b;}
+  }
+  return best;
+}
+function isBuilding(t){return t&&t.key&&B[t.key]&&t.maxHp&&S.buildings.includes(t);}
+function attack(a,tgt,dt){
+  const d=U[a.key]||{dmg:5,rng:1};
+  const isB=isBuilding(tgt);
+  const cx=isB?tgt.x+B[tgt.key].w/2:tgt.x, cy=isB?tgt.y+B[tgt.key].h/2:tgt.y;
+  const dist=Math.sqrt(dist2(a.x,a.y,cx,cy));
+  if(dist>(d.rng||1)+0.6){
+    a.tx=cx;a.ty=cy;moveUnit(a,dt);
+    return;
+  }
+  a.tx=a.x;a.ty=a.y;
+  a.cd-=dt;
+  if(a.cd>0)return;
+  a.cd=d.ranged?1.5:0.9;
+  let dmg=(d.dmg||5);
+  // аура знаменосца: цели рядом со своим знаменосцем получают меньше урона
+  const defended=!isB&&S.units.some(bn=>bn.key==='banner'&&bn.pid===tgt.pid&&bn!==tgt&&dist2(bn.x,bn.y,tgt.x,tgt.y)<36);
+  if(defended)dmg*=0.7;
+  if(d.fire&&isB){ tgt.fire=Math.max(tgt.fire||0,6); Snd.fire(); }
+  if(d.ranged){
+    if(d.siege&&d.rng>5){
+      // тяжёлый снаряд требушета/катапульты
+      S.effects.push({x:a.x,y:a.y,tx:cx,ty:cy,t:.9,kind:'rock'});
+      Snd.arrow();
+    } else {
+      S.effects.push({x:a.x,y:a.y,tx:cx,ty:cy,t:.4,kind:'arrow'});
+      Snd.arrow();
+    }
+    if(isB)tgt.hp-=dmg;
+    else{
+      const td=U[tgt.key]||{arm:0};
+      tgt.hp-=Math.max(2,dmg-(td.arm||0)*(d.pierce?0.3:1));
+    }
+  } else {
+    Snd.sword();
+    if(isB)tgt.hp-=dmg*1.5;
+    else{
+      const td=U[tgt.key]||{arm:0};
+      tgt.hp-=Math.max(1,dmg-(td.arm||0));
+    }
+  }
+  if(d.kamikaze&&isB){ tgt.fire=Math.max(tgt.fire||0,8); a.hp=0; Snd.boom(); }
+  if(tgt.hp<=0){ if(isB){Snd.boom();removeBuilding(tgt);} else killUnit(tgt); }
+}
+
+// ---------- ДВИЖЕНИЕ ----------
+function passable(x,y,pid){
+  const tx=Math.floor(x),ty=Math.floor(y);
+  if(tx<0||ty<0||tx>=GRID||ty>=GRID)return false;
+  const id=S.occ[ty*GRID+tx];
+  if(id>=0){
+    const b=S.buildings.find(b=>b.id===id);
+    if(!b)return true;
+    const bd=B[b.key];
+    if(bd.moat&&!b.moatFilled)return false;
+    if(bd.wall||bd.tower){
+      // приставная лестница: штурмующие могут вскарабкаться
+      if(pid!==undefined&&S.ladders.some(l=>l.pid===pid&&l.x===tx&&l.y===ty))return true;
+      return false;
+    }
+  }
+  return true;
+}
+// лестницы: {x,y,pid,t}
+function ladderTick(dt){
+  S.ladders=S.ladders.filter(l=>(l.t-=dt)>0);
+  for(const u of S.units){
+    const d=U[u.key];
+    if(!d||!d.dig||u.pid===undefined)continue;
+    if(u.state!=='attackMove'&&u.state!=='attack')continue;
+    // ищем вражескую стену рядом
+    const tx=Math.floor(u.x),ty=Math.floor(u.y);
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+      const x=tx+dx,y=ty+dy;
+      if(x<0||y<0||x>=GRID||y>=GRID)continue;
+      const id=S.occ[y*GRID+x];
+      if(id<0)continue;
+      const b=S.buildings.find(b=>b.id===id);
+      if(!b||b.pid===u.pid)continue;
+      const bd=B[b.key];
+      if(!(bd.wall||bd.tower))continue;
+      if(S.ladders.some(l=>l.x===x&&l.y===y&&l.pid===u.pid))continue;
+      // ставим лестницу
+      u.dig=(u.dig||0)+dt;
+      if(u.dig>=3){
+        u.dig=0;
+        S.ladders.push({x,y,pid:u.pid,t:60});
+        S.effects.push({x:x+.5,y:y+.5,t:.8,kind:'move'});
+        if(u.pid===0)toast('🪜 Лестница приставлена к стене!');
+      }
+      return;
+    }
+    u.dig=0;
+  }
+}
+function moveUnit(u,dt){
+  const d=U[u.key]||{spd:1.2};
+  let spd=d.spd||1.2;
+  if(S.players[u.pid].auraSpd)spd*=1.25;
+  const dx=u.tx-u.x,dy=u.ty-u.y;
+  const dist=Math.sqrt(dx*dx+dy*dy);
+  if(dist<0.05)return true;
+  const step=Math.min(dist,spd*dt);
+  let nx=u.x+dx/dist*step, ny=u.y+dy/dist*step;
+  if(passable(nx,ny,u.pid)){u.x=nx;u.y=ny;}
+  else if(passable(nx,u.y,u.pid)){u.x=nx;}
+  else if(passable(u.x,ny,u.pid)){u.y=ny;}
+  else{
+    if(!u.slideDir)u.slideDir=Math.random()<.5?1:-1;
+    const a=Math.atan2(dy,dx)+Math.PI/2*u.slideDir;
+    nx=u.x+Math.cos(a)*step;ny=u.y+Math.sin(a)*step;
+    if(passable(nx,ny,u.pid)){u.x=nx;u.y=ny;} else u.slideDir*=-1;
+  }
+  return false;
+}
+
+// ---------- ТИК ЮНИТА ----------
+function unitTick(u,dt){
+  if(u.hp<=0){killUnit(u);return;}
+  const d=U[u.key];
+  if(u.key==='peasant'){
+    if(u.job){
+      const bd=S.buildings.find(b=>b.id===u.job.bdId);
+      if(!bd||B[bd.key].worker===0){u.job=null;bd&&(bd.worker=0);}
+      else{
+        const cx=bd.x+B[bd.key].w/2, cy=bd.y+B[bd.key].h/2;
+        if(dist2(u.x,u.y,cx,cy)>1.4){u.tx=cx;u.ty=cy;moveUnit(u,dt);}
+      }
+    }
+    return;
+  }
+  if(u.key==='lord')return;
+  // инженер строит осадную машину у вражеских стен
+  if(u.key==='engineer'&&u.state==='attackMove'&&!u.built){
+    if(!u.siegeKey)u.siegeKey='catapult';
+    const p=S.players[u.pid];
+    const nearEnemy=S.buildings.find(b=>b.pid!==u.pid&&dist2(u.x,u.y,b.x+B[b.key].w/2,b.y+B[b.key].h/2)<144);
+    if(nearEnemy){
+      const sd=U[u.siegeKey];
+      if(p.res.gold>=sd.gold){
+        p.res.gold-=sd.gold;
+        const su=spawnUnit(u.siegeKey,u.x+rnd(-1,1),u.y+rnd(-1,1),u.pid);
+        su.state='attackMove';su.tx=nearEnemy.x+B[nearEnemy.key].w/2;su.ty=nearEnemy.y+B[nearEnemy.key].h/2;
+        u.built=true;
+        Snd.place();
+        if(u.pid===0)toast('🔧 Построено: '+sd.n);
+      }
+    }
+  }
+  if(d.healer){
+    u.cd-=dt;
+    if(u.cd<=0){
+      const wounded=S.units.find(e=>e.pid===u.pid&&e.hp<e.maxHp&&dist2(u.x,u.y,e.x,e.y)<25);
+      if(wounded){wounded.hp=Math.min(wounded.maxHp,wounded.hp+8);u.cd=2;S.effects.push({x:wounded.x,y:wounded.y,t:.5,kind:'heal'});}
+    }
+  }
+  if(u.state==='attackMove'||u.state==='attack'){
+    const tgt=(u.target&&(S.units.includes(u.target)||isBuilding(u.target))&&u.target.hp>0)?u.target:null;
+    if(tgt&&(!d.siege||isBuilding(tgt))){ attack(u,tgt,dt); }
+    else{
+      const e=d.siege?findEnemyBuilding(u,(d.rng||1)+8):findEnemy(u,(d.rng||1)+6);
+      if(e){u.target=e;attack(u,e,dt);}
+      else if(u.state==='attackMove'){
+        moveUnit(u,dt);
+        const e2=d.siege?findEnemyBuilding(u,d.rng||1):findEnemy(u,d.rng||1);
+        if(e2)u.target=e2;
+      } else u.state='idle';
+    }
+    return;
+  }
+  if(u.state==='move'){ if(moveUnit(u,dt))u.state='idle'; return; }
+  if((d.rng||1)>2){
+    const e=findEnemy(u,d.rng);
+    if(e){u.target=e;u.state='attack';}
+  }
+}
+
+// ---------- ИИ ----------
+function aiTick(dt){
+  for(const p of S.players){
+    if(p.id===0||p.dead)continue;
+    p.buildT-=dt;
+    if(p.buildT<=0){ p.buildT=rnd(4,8); aiBuild(p); }
+    // найм между волнами
+    const rB=S.buildings.find(b=>b.pid===p.id&&B[b.key].recruit);
+    if(rB){
+      const myCount=S.units.filter(u=>u.pid===p.id&&u.key!=='peasant'&&u.key!=='lord').length;
+      const cap=15+p.waveN*8;
+      if(myCount<cap){
+        const roster=aiRoster(p);
+        tryRecruit(roster[myCount%roster.length],p.id,rB.x,rB.y+B[rB.key].h);
+      }
+    }
+    if(S.t>=p.nextWave){
+      p.waveN++;
+      p.nextWave=S.t+rnd(180,300)*1000/(p.char==='raider'?1.4:1);
+      launchWave(p);
+    }
+  }
+}
+function aiRoster(p){
+  switch(p.char){
+    case 'raider':return ['maceman','knight','mountedS'];
+    case 'eco':return ['sling','archer','monk','dervish'];
+    case 'sieger':return ['archer','xbowman','engineer','swordsman'];
+    default:return ['spearman','archer','swordsman','pikeman'];
+  }
+}
+function aiBuild(p){
+  const want=[
+    ['hut',6],['lumber',2],['wheatfarm',2],['mill',1],['bakery',1],['granary',1],
+    ['hopsfarm',1],['brewery',1],['tavern',1],['orchard',1],
+    ['barracks',1],['archery',1],['fletcher',1],['smith',1],
+    ['swall',12],['towerS',4],['moat',10],
+  ];
+  for(const [key,cnt] of want){
+    const have=S.buildings.filter(b=>b.pid===p.id&&b.key===key).length;
+    if(have>=cnt)continue;
+    for(let tries=0;tries<25;tries++){
+      const r=irnd(3,11), a=rnd(0,Math.PI*2);
+      const x=Math.floor(p.baseX+Math.cos(a)*r), y=Math.floor(p.baseY+Math.sin(a)*r);
+      if(canPlace(key,x,y)){
+        if(!payCost(p,B[key].cost))return;
+        addBuilding(key,x,y,p.id);
+        return;
+      }
+    }
+    return;
+  }
+}
+function launchWave(p){
+  const army=S.units.filter(u=>u.pid===p.id&&u.key!=='peasant'&&u.key!=='lord');
+  if(army.length<4)return;
+  const cx=S.players[0].baseX, cy=S.players[0].baseY;
+  for(const u of army){ u.state='attackMove'; u.target=null; u.tx=cx+rnd(-4,4); u.ty=cy+rnd(-4,4); }
+  Snd.horn();
+  toast(`⚔ ${p.name}: волна ${p.waveN} идёт на вас!`);
+}
+
+// ---------- ОБОРОНА: масло, смоляные рвы, колодцы, сеноплюи ----------
+function defenseTick(dt){
+  for(const bd of S.buildings){
+    const b=B[bd.key];
+    // котёл масла: лжёт на врагов рядом
+    if(b.oil){
+      bd.cd=(bd.cd||0)-dt;
+      if(bd.cd<=0){
+        const foe=S.units.find(u=>u.pid!==bd.pid&&u.key!=='peasant'&&dist2(u.x,u.y,bd.x+.5,bd.y+.5)<4);
+        if(foe){
+          bd.cd=10;
+          Snd.fire();
+          for(const u of S.units){
+            if(u.pid===bd.pid||u.key==='peasant')continue;
+            if(dist2(u.x,u.y,bd.x+.5,bd.y+.5)<4){u.hp-=25;S.effects.push({x:u.x,y:u.y,t:.6,kind:'blood'});}
+          }
+        }
+      }
+    }
+    // смоляной ров: вспыхивает, когда враг рядом и свои стрелники видят
+    if(bd.key==='pitchmoat'&&bd.fire<=0){
+      const foe=S.units.find(u=>u.pid!==bd.pid&&u.key!=='peasant'&&dist2(u.x,u.y,bd.x+.5,bd.y+.5)<9);
+      const archer=foe&&S.units.find(a=>a.pid===bd.pid&&U[a.key]&&U[a.key].ranged&&dist2(a.x,a.y,bd.x+.5,bd.y+.5)<144);
+      if(foe&&archer){
+        bd.fire=8;Snd.fire();
+        if(bd.pid===0)toast('🔥 Смоляной ров вспыхнул!');
+      }
+    }
+    if(bd.key==='pitchmoat'&&bd.fire>0){
+      for(const u of S.units){
+        if(u.pid===bd.pid)continue;
+        if(dist2(u.x,u.y,bd.x+.5,bd.y+.5)<4){u.hp-=dt*30;S.effects.push({x:u.x,y:u.y,t:.4,kind:'blood'});}
+      }
+    }
+    // колодец тушит горящие здания рядом
+    if(bd.key==='well'){
+      for(const o of S.buildings){
+        if(o!==bd&&o.fire>0&&dist2(o.x,o.y,bd.x,bd.y)<36)o.fire=Math.max(0,o.fire-dt*2);
+      }
+    }
+    // сеноплюй сбрасывает вражеские лестницы рядом
+    if(bd.key==='dogout'){
+      bd.cd=(bd.cd||0)-dt;
+      if(bd.cd<=0){
+        const lad=S.ladders.find(l=>l.pid!==bd.pid&&dist2(l.x,l.y,bd.x,bd.y)<9);
+        if(lad){S.ladders=S.ladders.filter(l=>l!==lad);bd.cd=15;if(bd.pid===0)toast('🪜 Сеноплюй сбросил лестницу врага!');}
+      }
+    }
+  }
+}
+// ---------- ТРЕВОГА ----------
+let alarmT=0;
+function alarmTick(dt){
+  alarmT-=dt;
+  if(alarmT>0)return;
+  const p=S.players[0];
+  if(!p||p.dead)return;
+  const foe=S.units.find(u=>u.pid!==0&&u.key!=='peasant'&&dist2(u.x,u.y,p.baseX,p.baseY)<400);
+  if(foe){
+    alarmT=90;
+    Snd.horn();
+    toast('⚠ Враг у ваших стен!');
+  }
+}
+// ---------- СОБЫТИЯ ----------
+let nextEvent=240*1000;
+function eventTick(dt){
+  nextEvent-=dt*1000;
+  if(nextEvent>0)return;
+  nextEvent=rnd(240,420)*1000;
+  const roll=Math.random();
+  const p=S.players[0];
+  if(roll<0.4){
+    const woodB=S.buildings.filter(b=>b.pid===0&&['hut','lumber','stockpile','wwall'].includes(b.key));
+    if(woodB.length){const b=woodB[irnd(0,woodB.length-1)];b.fire=8;toast('🔥 Пожар! Колодцы тушат его.');}
+  } else if(roll<0.7){
+    p.sick=true;toast('☠ Болезнь! Аптека с травами лечит.');
+    setTimeout(()=>{if(S)p.sick=false;},60000);
+  } else {
+    p.res.wheat=(p.res.wheat||0)+30;toast('🌾 Урожайный год! +30 пшеницы');
+  }
+}
+
+// ---------- ВВОД ----------
+let mouse={x:0,y:0,down:false,btn:0,sx:0,sy:0,moved:false};
+let keys={};
+canvas.addEventListener('mousedown',e=>{mouse.down=true;mouse.btn=e.button;mouse.sx=e.clientX;mouse.sy=e.clientY;mouse.x=e.clientX;mouse.y=e.clientY;mouse.moved=false;});
+addEventListener('mousemove',e=>{
+  if(mouse.down&&mouse.btn===0&&!S?.buildSel){
+    // рамка выделения отрядов
+    if(Math.abs(e.clientX-mouse.sx)+Math.abs(e.clientY-mouse.sy)>10){
+      mouse.moved=true;
+      dragRect={x0:Math.min(mouse.sx,e.clientX),y0:Math.min(mouse.sy,e.clientY),x1:Math.max(mouse.sx,e.clientX),y1:Math.max(mouse.sy,e.clientY)};
+    }
+  } else if(mouse.down){
+    const k=0.9/cam.zoom;
+    cam.x-=(e.clientX-mouse.x)*k; cam.y-=(e.clientY-mouse.y)*k*2;
+    mouse.moved=true;
+  }
+  mouse.x=e.clientX;mouse.y=e.clientY;
+});
+addEventListener('mouseup',e=>{
+  if(!S||S.over)return;
+  if(e.button===0){
+    if(mouse.moved&&!S.buildSel){
+      // выбор отрядов рамкой
+      const x0=Math.min(mouse.sx,e.clientX),x1=Math.max(mouse.sx,e.clientX);
+      const y0=Math.min(mouse.sy,e.clientY),y1=Math.max(mouse.sy,e.clientY);
+      const picked=S.units.filter(u=>u.pid===0&&u.key!=='peasant'&&(()=>{
+        const [sx,sy]=iso(u.x,u.y);return sx>=x0&&sx<=x1&&sy>=y0&&sy<=y1;})());
+      if(picked.length){S.selUnits=picked;S.sel=null;Snd.click();}
+      else{S.sel=null;S.selUnits=[];}
+      updateSelPanel();
+    }
+    else if(mouse.moved&&S.buildSel&&B[S.buildSel].drag)dragBuild(mouse.sx,mouse.sy,e.clientX,e.clientY);
+    else onClick(e.clientX,e.clientY,e.shiftKey);
+  }
+  mouse.down=false;
+  dragRect=null;
+});
+canvas.addEventListener('contextmenu',e=>{e.preventDefault();if(S){S.buildSel=null;S.sel=null;S.selUnits=[];updateSelPanel();updateBuildBar();}});
+canvas.addEventListener('wheel',e=>{e.preventDefault();cam.zoom=clamp(cam.zoom*(e.deltaY>0?0.9:1.1),10,60);},{passive:false});
+addEventListener('keydown',e=>{
+  keys[e.code]=true;
+  if(!S)return;
+  if(e.code==='Escape'){S.buildSel=null;S.selUnits=[];updateSelPanel();updateBuildBar();}
+  if(e.code==='KeyQ')cam.rot+=0.15;
+  if(e.code==='KeyE')cam.rot-=0.15;
+  if(e.code==='Space')setSpeed(speed===0?1:0);
+});
+addEventListener('keyup',e=>keys[e.code]=false);
+let touchState=null;
+canvas.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  if(e.touches.length===1)touchState={mode:'tap',x:e.touches[0].clientX,y:e.touches[0].clientY,sx:e.touches[0].clientX,sy:e.touches[0].clientY};
+  else if(e.touches.length===2){
+    const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    touchState={mode:'pinch',d};
+  }
+},{passive:false});
+canvas.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  if(!touchState)return;
+  if(e.touches.length===1&&touchState.mode!=='pinch'){
+    const dx=e.touches[0].clientX-touchState.sx, dy=e.touches[0].clientY-touchState.sy;
+    if(touchState.mode==='tap'&&Math.abs(dx)+Math.abs(dy)>10)touchState.mode='pan';
+    if(touchState.mode==='pan'){
+      const k=1.2/cam.zoom;
+      cam.x-=(e.touches[0].clientX-touchState.x)*k;
+      cam.y-=(e.touches[0].clientY-touchState.y)*k*2;
+    }
+    touchState.x=e.touches[0].clientX;touchState.y=e.touches[0].clientY;
+  } else if(e.touches.length===2){
+    const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    if(touchState.mode!=='pinch'){touchState.mode='pinch';touchState.d=d;}
+    else{cam.zoom=clamp(cam.zoom*d/touchState.d,10,60);touchState.d=d;}
+  }
+},{passive:false});
+canvas.addEventListener('touchend',e=>{
+  e.preventDefault();
+  if(touchState&&touchState.mode==='tap'&&S&&!S.over)onClick(touchState.sx,touchState.sy,false);
+  touchState=null;
+},{passive:false});
+
+function onClick(sx,sy,shift){
+  const [wx,wy]=screenToWorld(sx,sy);
+  const tx=Math.floor(wx),ty=Math.floor(wy);
+  Snd.click();
+  if(S.buildSel){
+    const key=S.buildSel,b=B[key];
+    const bx=Math.floor(wx-b.w/2),by=Math.floor(wy-b.h/2);
+    if(canPlace(key,bx,by)){
+      if(payCost(S.players[0],b.cost)){
+        addBuilding(key,bx,by,0);
+        Snd.place();
+        if(!keys.ShiftLeft&&!keys.ShiftRight){S.buildSel=null;updateBuildBar();}
+      } else toast('Недостаточно ресурсов');
+    } else toast('Здесь строить нельзя');
+    return;
+  }
+  let best=null,bd=1.2;
+  for(const u of S.units){
+    if(u.pid!==0)continue;
+    const d=dist2(wx,wy,u.x,u.y);
+    if(d<bd){bd=d;best=u;}
+  }
+  if(best){
+    if(best.key==='peasant'){S.sel=best;S.selUnits=[];updateSelPanel();return;}
+    if(shift){ if(!S.selUnits.includes(best))S.selUnits.push(best); }
+    else S.selUnits=[best];
+    S.sel=null;updateSelPanel();return;
+  }
+  const id=tx>=0&&ty>=0&&tx<GRID&&ty<GRID?S.occ[ty*GRID+tx]:-1;
+  if(id>=0){
+    const b=S.buildings.find(b=>b.id===id);
+    if(b&&b.pid===0){S.sel=b;S.selUnits=[];updateSelPanel();return;}
+  }
+  if(S.selUnits.length){
+    for(const u of S.selUnits){u.state='attackMove';u.target=null;u.tx=wx;u.ty=wy;}
+    S.effects.push({x:wx,y:wy,t:.6,kind:'move'});
+  } else {S.sel=null;updateSelPanel();}
+}
+function dragBuild(sx,sy,ex,ey){
+  const key=S.buildSel;
+  const [x1,y1]=screenToWorld(sx,sy),[x2,y2]=screenToWorld(ex,ey);
+  const x0=Math.floor(Math.min(x1,x2)),x1c=Math.floor(Math.max(x1,x2));
+  const y0=Math.floor(Math.min(y1,y2)),y1c=Math.floor(Math.max(y1,y2));
+  let placed=0;
+  for(let y=y0;y<=y1c;y++)for(let x=x0;x<=x1c;x++){
+    if(canPlace(key,x,y)&&payCost(S.players[0],B[key].cost)){addBuilding(key,x,y,0);placed++;}
+  }
+  if(placed)Snd.place();
+  updateBuildBar();
+}
+
+// ---------- ПАНЕЛИ ----------
+const $=id=>document.getElementById(id);
+function toast(msg){
+  const t=document.createElement('div');t.className='toast';t.textContent=msg;
+  $('toasts').appendChild(t);setTimeout(()=>t.remove(),3500);
+}
+function buildCats(){
+  const c=$('cats');c.innerHTML='';
+  CATS.forEach(cat=>{
+    const el=document.createElement('span');el.className='cat';el.textContent=cat;
+    el.onclick=()=>{document.querySelectorAll('.cat').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');buildItems(cat);Snd.click();};
+    c.appendChild(el);
+  });
+}
+function buildItems(cat){
+  const c=$('items');c.innerHTML='';
+  Object.entries(B).filter(([k,b])=>b.cat===cat).forEach(([k,b])=>{
+    const el=document.createElement('div');el.className='item';el.dataset.k=k;
+    const cost=Object.entries(b.cost).map(([r,n])=>`${RES_RU[r]}:${n}`).join(' ')||'—';
+    el.innerHTML=`${b.n}<br><span class="cost">${cost}</span>`;
+    el.title=b.desc||'';
+    el.onclick=()=>{S.buildSel=S.buildSel===k?null:k;buildItems(cat);Snd.click();};
+    c.appendChild(el);
+  });
+}
+function updateBuildBar(){
+  document.querySelectorAll('.item').forEach(el=>el.classList.toggle('sel',el.dataset.k===S.buildSel));
+}
+function updateSelPanel(){
+  const p=$('selfpanel');
+  if(S.selUnits.length){
+    p.style.display='block';
+    const u=S.selUnits[0],d=U[u.key];
+    let extra='';
+    if(u.key==='engineer'){
+      extra='<div style="margin-top:6px;color:#d8b25a">Осадная машина:</div>';
+      Object.entries(SIEGE).forEach(([k,sd])=>{
+        extra+=`<span class="btn" style="${u.siegeKey===k?'outline:2px solid #d8b25a':''}" onclick="pickSiege('${k}')">${sd.n} (${sd.gold}з)</span>`;
+      });
+      extra+='<div style="color:#b8a888;margin-top:4px">Прикажите инженеру атаковать — у стен врага он построит машину.</div>';
+    }
+    p.innerHTML=`<h4>${d?d.n:u.key} ×${S.selUnits.length}</h4>
+      <div class="row"><span>HP</span><span>${Math.round(u.hp)}/${u.maxHp}</span></div>
+      <div class="row"><span>Приказ</span><span>${stRu(u.state)}</span></div>
+      ${extra}
+      <span class="btn" onclick="setStance('stand')">Стоять</span><span class="btn" onclick="setStance('aggr')">Атака</span>`;
+    return;
+  }
+  if(S.sel){
+    const b=S.sel,bd=B[b.key];
+    p.style.display='block';
+    let html=`<h4>${bd.n}</h4><div class="row"><span>Прочность</span><span>${Math.round(b.hp)}/${b.maxHp}</span></div>`;
+    if(b.fire>0)html+=`<div class="row"><span style="color:#e06040">🔥 Горит!</span><span></span></div>`;
+    if(bd.desc)html+=`<div style="color:#b8a888;margin:4px 0">${bd.desc}</div>`;
+    if(bd.recruit){
+      html+='<div style="margin-top:6px;color:#d8b25a">Найм:</div>';
+      Object.entries(U).filter(([k,u])=>u.b===b.key).forEach(([k,u])=>{
+        const gear=Object.entries(u.gear||{}).map(([r,n])=>RES_RU[r]+':'+n).join(', ');
+        html+=`<span class="btn" onclick="recruit('${k}')">${u.n} <small>(${u.gold}з${gear?' + '+gear:''})</small></span>`;
+      });
+    }
+    if(bd.trade){
+      html+=`<div style="margin-top:6px;color:#d8b25a">Рынок:</div>
+        <span class="btn" onclick="trade('wood',10)">Продать 10 дерева (+50з)</span>
+        <span class="btn" onclick="trade('stone',10)">Продать 10 камня (+70з)</span>
+        <span class="btn" onclick="trade('bread',-10)">Купить 10 хлеба (−80з)</span>`;
+    }
+    if(b.key==='keep'){
+      html+=`<div style="margin-top:6px;color:#d8b25a">Управление замком:</div>
+        <div class="row"><span>Налоги</span><span>
+          <span class="btn" onclick="setTax(-1)">−</span>${taxName(S.players[0].tax)}<span class="btn" onclick="setTax(1)">+</span></span></div>
+        <div class="row"><span>Пайки</span><span>
+          <span class="btn" onclick="setRation(-1)">−</span>${rationName(S.players[0].ration)}<span class="btn" onclick="setRation(1)">+</span></span></div>
+        <div style="color:#b8a888">Народ: ${S.players[0].pop}/${S.players[0].popMax} · Работников занято: ${S.players[0].workers}/${S.players[0].slots}</div>`;
+    }
+    if(bd.prod&&bd.worker===0)html+='<div style="color:#e0a040">Нет работника — ждём крестьянина</div>';
+    html+=`<br><span class="btn warn" onclick="demolish()">Снести</span>`;
+    p.innerHTML=html;
+    return;
+  }
+  p.style.display='none';
+}
+window.setStance=s=>{S.selUnits.forEach(u=>u.state=s==='aggr'?'attackMove':'idle');};
+window.pickSiege=k=>{S.selUnits.forEach(u=>{if(u.key==='engineer'){u.siegeKey=k;u.built=false;}});updateSelPanel();Snd.click();};
+window.recruit=k=>{
+  const near=S.sel;
+  const u=tryRecruit(k,0,near.x,near.y+B[near.key].h);
+  if(u){Snd.coin();toast(U[k].n+' нанят');}else toast('Нужно золото и оружие');
+  updateSelPanel();
+};
+window.trade=(r,n)=>{const p=S.players[0];
+  if(n>0){if((p.res[r]||0)>=n){p.res[r]-=n;p.res.gold+=r==='stone'?70:50;Snd.coin();}else toast('Нет ресурса');}
+  else{if(p.res.gold>=80){p.res.gold-=80;p.res[r]=(p.res[r]||0)-n;Snd.coin();}else toast('Мало золота');}
+  updateSelPanel();};
+window.setTax=d=>{S.players[0].tax=clamp(S.players[0].tax+d,-2,3);updateSelPanel();};
+window.setRation=d=>{S.players[0].ration=clamp(S.players[0].ration+d,0,5);updateSelPanel();};
+window.demolish=()=>{if(S.sel){removeBuilding(S.sel);S.sel=null;updateSelPanel();}};
+const taxName=t=>['Подачка','Низкие','Средние','Высокие','Жестокие','Разорительные'][t+2]||'Средние';
+const rationName=r=>['Нет','Половина','Норма','Двойной','Тройной','Изобилие'][r];
+const stRu=s=>({idle:'ждёт',move:'идёт',attackMove:'атакует',attack:'бой'})[s]||s;
+const RES_RU={gold:'золото',wood:'дерево',stone:'камень',iron:'железо',pitch:'смола',wheat:'пшеница',flour:'мука',herbs:'травы',bread:'хлеб',apple:'яблоки',cheese:'сыр',meat:'мясо',hops:'хмель',ale:'эль',candle:'свечи',bows:'луки',xbows:'арбалеты',spears:'копья',pikes:'пики',swords:'мечи',maces:'булавы',larmour:'кож. броня',harmour:'латы',horses:'кони'};
+
+// ---------- РЕНДЕР ----------
+function shade(hex,f){
+  const n=parseInt(hex.slice(1),16);
+  return `rgb(${clamp(Math.round((n>>16)*f),0,255)},${clamp(Math.round((n>>8&255)*f),0,255)},${clamp(Math.round((n&255)*f),0,255)})`;
+}
+function drawTerrain(){
+  const [wx0,wy0]=screenToWorld(0,0),[wx1,wy1]=screenToWorld(W,H);
+  const x0=clamp(Math.floor(wx0)-2,0,GRID-1),x1=clamp(Math.ceil(wx1)+2,0,GRID-1);
+  const y0=clamp(Math.floor(wy0)-2,0,GRID-1),y1=clamp(Math.ceil(wy1)+2,0,GRID-1);
+  const z=cam.zoom;
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+    const i=y*GRID+x, h=S.terrain.h[i];
+    const [sx,sy]=iso(x,y),[sx2,sy2]=iso(x+1,y+1);
+    if(h<0)ctx2d.fillStyle='#3a5a7a';
+    else{
+      const shadeF=clamp(0.75+h*0.5,0.7,1.25);
+      ctx2d.fillStyle=`rgb(${Math.round(90*shadeF)},${Math.round(122*shadeF)},${Math.round(58*shadeF)})`;
+    }
+    ctx2d.fillRect(sx,sy,sx2-sx+1,sy2-sy+1);
+    const r=S.terrain.res[i];
+    if(r&&h>=0){
+      const cx=sx+(sx2-sx)/2, cy=sy+(sy2-sy)/2, s=z/26;
+      if(r===1){
+        ctx2d.fillStyle='#4a3520';ctx2d.fillRect(cx-1.5*s,cy-6*s,3*s,7*s);
+        ctx2d.fillStyle='#2f6330';
+        ctx2d.beginPath();ctx2d.arc(cx,cy-7*s,4.5*s,0,7);ctx2d.fill();
+        ctx2d.fillStyle='rgba(255,255,255,.08)';ctx2d.beginPath();ctx2d.arc(cx-s,cy-8*s,2.5*s,0,7);ctx2d.fill();
+      } else {
+        ctx2d.fillStyle=r===2?'#8a8a82':r===3?'#7a5a4a':'#c8a830';
+        ctx2d.beginPath();ctx2d.moveTo(cx,cy-4*s);ctx2d.lineTo(cx+4*s,cy);ctx2d.lineTo(cx,cy+3*s);ctx2d.lineTo(cx-4*s,cy);ctx2d.fill();
+        ctx2d.fillStyle='rgba(255,255,255,.15)';ctx2d.beginPath();ctx2d.moveTo(cx,cy-4*s);ctx2d.lineTo(cx+4*s,cy);ctx2d.lineTo(cx,cy);ctx2d.fill();
+      }
+    }
+  }
+}
+function drawBuilding(bd){
+  const b=B[bd.key], z=cam.zoom, s=z/26;
+  const [sx,sy]=iso(bd.x,bd.y);
+  const wpx=b.w*z, hpx=b.h*z*0.5;
+  const wallH=(b.tower?b.tower*0.6+0.5:0.7)*z;
+  const p=S.players[bd.pid];
+  const base=bd.pid===0?'#8a8a92':'#9a7a7a';
+  const roofC=bd.pid===0?'#4a5560':'#5a3a3a';
+  ctx2d.fillStyle='rgba(0,0,0,.25)';
+  ctx2d.beginPath();ctx2d.ellipse(sx+wpx/2,sy+hpx/2+2,wpx*0.55,hpx*0.5,0,0,7);ctx2d.fill();
+  if(b.moat){
+    ctx2d.fillStyle=(bd.key==='pitchmoat')?'#2a2020':'#3a4a5a';
+    ctx2d.fillRect(sx+1,sy+1,wpx-2,hpx-2);
+    if(bd.key==='pitchmoat'&&bd.fire>0){ctx2d.fillStyle='rgba(230,110,30,.8)';ctx2d.fillRect(sx+1,sy+1,wpx-2,hpx-2);}
+    return;
+  }
+  const top=sy-wallH;
+  ctx2d.fillStyle=bd.fire>0?'#7a4a3a':base;
+  ctx2d.fillRect(sx,top,wpx,hpx+wallH);
+  ctx2d.fillStyle='rgba(0,0,0,.25)';
+  ctx2d.fillRect(sx+wpx*0.7,top,wpx*0.3,hpx+wallH);
+  if(b.wall||b.tower){
+    ctx2d.fillStyle=shade(base,0.8);
+    for(let i=0;i<b.w*2;i++)ctx2d.fillRect(sx+i*wpx/(b.w*2),top-3*s,wpx/(b.w*2)*0.6,3*s);
+  } else {
+    ctx2d.fillStyle=roofC;
+    ctx2d.beginPath();
+    ctx2d.moveTo(sx-2,sy+hpx/2-wallH);
+    ctx2d.lineTo(sx+wpx/2,sy+hpx/2-wallH-hpx*0.55);
+    ctx2d.lineTo(sx+wpx+2,sy+hpx/2-wallH);
+    ctx2d.lineTo(sx+wpx/2,sy+hpx/2-wallH+hpx*0.3);
+    ctx2d.fill();
+  }
+  if(bd.key==='keep'){
+    const fx=sx+wpx/2,fy=top-hpx*0.55;
+    ctx2d.strokeStyle='#3a3a3a';ctx2d.beginPath();ctx2d.moveTo(fx,fy);ctx2d.lineTo(fx,fy-14*s);ctx2d.stroke();
+    ctx2d.fillStyle=p.color;ctx2d.fillRect(fx,fy-14*s,9*s,6*s);
+  }
+  if(bd.key==='well'){ctx2d.fillStyle='#3a4a5a';ctx2d.beginPath();ctx2d.arc(sx+wpx/2,sy+hpx/2,wpx*0.2,0,7);ctx2d.fill();}
+  if(bd.key==='signal'||bd.key==='brazier'){ctx2d.fillStyle='#e08030';ctx2d.beginPath();ctx2d.arc(sx+wpx/2,top,3*s,0,7);ctx2d.fill();}
+  if(bd.field)for(const [fx,fy] of bd.field){const [a,bb]=iso(fx,fy);ctx2d.fillStyle='#8a9a3a';ctx2d.fillRect(a,bb,z,z*0.5);}
+  if(bd.hp<bd.maxHp){
+    ctx2d.fillStyle='#300';ctx2d.fillRect(sx,top-6,wpx,3);
+    ctx2d.fillStyle=bd.hp/bd.maxHp>0.4?'#6a4':'#c43';ctx2d.fillRect(sx,top-6,wpx*bd.hp/bd.maxHp,3);
+  }
+  if(bd.fire>0){
+    ctx2d.fillStyle=`rgba(230,${irnd(90,140)},30,${rnd(.6,.9)})`;
+    ctx2d.beginPath();ctx2d.arc(sx+wpx/2,top+rnd(-4,4),rnd(3,6)*s,0,7);ctx2d.fill();
+  }
+}
+function drawLadders(){
+  const s=cam.zoom/26;
+  for(const l of S.ladders){
+    const [sx,sy]=iso(l.x+.5,l.y+.5);
+    ctx2d.strokeStyle='#8a6a3a';ctx2d.lineWidth=1.5;
+    ctx2d.beginPath();ctx2d.moveTo(sx-4*s,sy);ctx2d.lineTo(sx-1*s,sy-14*s);ctx2d.stroke();
+    ctx2d.beginPath();ctx2d.moveTo(sx+1*s,sy);ctx2d.lineTo(sx+4*s,sy-14*s);ctx2d.stroke();
+    for(let i=1;i<5;i++){
+      const t=i/5;
+      ctx2d.beginPath();ctx2d.moveTo(lerp(sx-4*s,sx-1*s,t),lerp(sy,sy-14*s,t));ctx2d.lineTo(lerp(sx+1*s,sx+4*s,t),lerp(sy,sy-14*s,t));ctx2d.stroke();
+    }
+  }
+}
+function drawUnit(u){
+  const d=U[u.key], z=cam.zoom, s=z/26;
+  const p=S.players[u.pid];
+  const [sx,sy]=iso(u.x,u.y);
+  ctx2d.fillStyle='rgba(0,0,0,.3)';
+  ctx2d.beginPath();ctx2d.ellipse(sx,sy,4*s,2*s,0,0,7);ctx2d.fill();
+  if(u.key==='peasant'){
+    ctx2d.fillStyle='#8a7a5a';ctx2d.fillRect(sx-1.5*s,sy-7*s,3*s,6*s);
+    ctx2d.fillStyle='#c8a87a';ctx2d.beginPath();ctx2d.arc(sx,sy-8*s,2*s,0,7);ctx2d.fill();
+    return;
+  }
+  if(d.siege){ // осадная машина: деревянная рама
+    ctx2d.fillStyle='#6a5535';ctx2d.fillRect(sx-5*s,sy-6*s,10*s,5*s);
+    ctx2d.fillStyle='#4a3a22';ctx2d.fillRect(sx-5*s,sy-6*s,10*s,1.5*s);
+    if(d.rng>2){ // метательная машина с рычагом
+      ctx2d.strokeStyle='#3a2e1a';ctx2d.lineWidth=2*s*0.6;
+      ctx2d.beginPath();ctx2d.moveTo(sx,sy-5*s);ctx2d.lineTo(sx+7*s,sy-14*s);ctx2d.stroke();
+      ctx2d.fillStyle='#333';ctx2d.beginPath();ctx2d.arc(sx+7*s,sy-14*s,2*s,0,7);ctx2d.fill();
+    } else if(d.kamikaze){ // горящая телега
+      ctx2d.fillStyle=`rgba(230,${irnd(80,140)},30,${rnd(.6,.95)})`;
+      ctx2d.beginPath();ctx2d.arc(sx+rnd(-3,3)*s,sy-8*s,rnd(2,4)*s,0,7);ctx2d.fill();
+    } else { // таран / башня / мантелет
+      ctx2d.fillStyle=d.n==='Мантелет'?'#7a6a4a':'#5a452a';
+      ctx2d.fillRect(sx-5*s,sy-13*s,10*s,7*s);
+    }
+    if(u.hp<u.maxHp){
+      ctx2d.fillStyle='#300';ctx2d.fillRect(sx-5*s,sy-16*s,10*s,1.5*s);
+      ctx2d.fillStyle='#6c4';ctx2d.fillRect(sx-5*s,sy-16*s,10*s*u.hp/u.maxHp,1.5*s);
+    }
+    return;
+  }
+  ctx2d.fillStyle=shade(p.color,u.pid===0?1:0.85);
+  ctx2d.fillRect(sx-2*s,sy-9*s,4*s,7*s);
+  ctx2d.fillStyle='#d8b090';
+  ctx2d.beginPath();ctx2d.arc(sx,sy-10.5*s,2.2*s,0,7);ctx2d.fill();
+  if(d.arm>=5){ctx2d.fillStyle='#b0b0b8';ctx2d.beginPath();ctx2d.arc(sx,sy-11*s,2.4*s,0,7);ctx2d.fill();}
+  ctx2d.strokeStyle='#c8c8c8';ctx2d.lineWidth=1;
+  if(d.ranged){ctx2d.beginPath();ctx2d.arc(sx+3*s,sy-7*s,2.5*s,-1.2,1.2);ctx2d.stroke();}
+  else if(u.key==='spearman'||u.key==='pikeman'||u.key==='mountedS'){ctx2d.beginPath();ctx2d.moveTo(sx+2*s,sy-2*s);ctx2d.lineTo(sx+5*s,sy-14*s);ctx2d.stroke();}
+  else{ctx2d.beginPath();ctx2d.moveTo(sx+2*s,sy-6*s);ctx2d.lineTo(sx+5*s,sy-9*s);ctx2d.stroke();}
+  if(d.cav){ctx2d.fillStyle='#6a4a32';ctx2d.fillRect(sx-4*s,sy-5*s,8*s,4*s);ctx2d.fillRect(sx+3*s,sy-8*s,2.5*s,3.5*s);}
+  if(u.key==='banner'){ctx2d.fillStyle=p.color;ctx2d.fillRect(sx+3*s,sy-15*s,4*s,3*s);}
+  if(u.hp<u.maxHp){
+    ctx2d.fillStyle='#300';ctx2d.fillRect(sx-4*s,sy-15*s,8*s,1.5*s);
+    ctx2d.fillStyle='#6c4';ctx2d.fillRect(sx-4*s,sy-15*s,8*s*u.hp/u.maxHp,1.5*s);
+  }
+}
+function drawEffects(dt){
+  S.effects=S.effects.filter(e=>(e.t-=dt)>0);
+  for(const e of S.effects){
+    const z=cam.zoom;
+    if(e.kind==='arrow'){
+      const [x1,y1]=iso(e.x,e.y),[x2,y2]=iso(e.tx,e.ty);
+      const t=1-e.t/0.4;
+      ctx2d.strokeStyle='#d8d0c0';ctx2d.lineWidth=1;
+      ctx2d.beginPath();ctx2d.moveTo(x1,y1-10*z/26);ctx2d.lineTo(lerp(x1,x2,t),lerp(y1,y2,t)-10*z/26-Math.sin(t*Math.PI)*14*z/26);ctx2d.stroke();
+    } else if(e.kind==='rock'){
+      const [x1,y1]=iso(e.x,e.y),[x2,y2]=iso(e.tx,e.ty);
+      const t=1-e.t/0.9;
+      const [rx,ry]=[lerp(x1,x2,t),lerp(y1,y2,t)-Math.sin(t*Math.PI)*30*z/26];
+      ctx2d.fillStyle='#555';
+      ctx2d.beginPath();ctx2d.arc(rx,ry,3.5*z/26,0,7);ctx2d.fill();
+      ctx2d.fillStyle='rgba(255,255,255,.2)';
+      ctx2d.beginPath();ctx2d.arc(rx-1*z/26,ry-1*z/26,1.5*z/26,0,7);ctx2d.fill();
+      if(e.t<=dt&&e.t+dt>0)Snd.boom();
+    } else if(e.kind==='move'){
+      const [x,y]=iso(e.x,e.y);
+      ctx2d.strokeStyle='rgba(216,178,90,.8)';ctx2d.lineWidth=2;
+      ctx2d.beginPath();ctx2d.arc(x,y,(0.6-e.t)*cam.zoom*1.5,0,7);ctx2d.stroke();
+    } else if(e.kind==='blood'){
+      const [x,y]=iso(e.x,e.y);
+      ctx2d.fillStyle=`rgba(150,30,30,${e.t})`;
+      ctx2d.beginPath();ctx2d.arc(x,y-6*z/26,3*z/26,0,7);ctx2d.fill();
+    } else if(e.kind==='heal'){
+      const [x,y]=iso(e.x,e.y);
+      ctx2d.fillStyle=`rgba(120,220,120,${e.t})`;
+      ctx2d.fillRect(x-1,y-16*z/26,2,8*z/26);ctx2d.fillRect(x-4,y-13*z/26,8,2);
+    }
+  }
+}
+let dragRect=null;
+function drawGhost(){
+  if(!S.buildSel)return;
+  const b=B[S.buildSel];
+  const [wx,wy]=screenToWorld(mouse.x||W/2,mouse.y||H/2);
+  const bx=Math.floor(wx-b.w/2),by=Math.floor(wy-b.h/2);
+  const ok=canPlace(S.buildSel,bx,by);
+  for(let dy=0;dy<b.h;dy++)for(let dx=0;dx<b.w;dx++){
+    const [sx,sy]=iso(bx+dx,by+dy);
+    ctx2d.fillStyle=ok?'rgba(100,200,100,.35)':'rgba(200,80,80,.35)';
+    ctx2d.fillRect(sx,sy,cam.zoom,cam.zoom*0.5);
+  }
+}
+function drawSel(){
+  if(dragRect){
+    ctx2d.strokeStyle='#d8b25a';ctx2d.lineWidth=1;
+    ctx2d.fillStyle='rgba(216,178,90,.08)';
+    const r=dragRect;
+    ctx2d.fillRect(r.x0,r.y0,r.x1-r.x0,r.y1-r.y0);
+    ctx2d.strokeRect(r.x0,r.y0,r.x1-r.x0,r.y1-r.y0);
+  }
+  for(const u of S.selUnits){
+    const [sx,sy]=iso(u.x,u.y);
+    ctx2d.strokeStyle='#d8b25a';ctx2d.lineWidth=1.5;
+    ctx2d.beginPath();ctx2d.ellipse(sx,sy,6*cam.zoom/26,3*cam.zoom/26,0,0,7);ctx2d.stroke();
+  }
+  if(S.sel){
+    const b=S.sel,bd=B[b.key];
+    const [sx,sy]=iso(b.x,b.y);
+    ctx2d.strokeStyle='#d8b25a';ctx2d.lineWidth=2;
+    ctx2d.strokeRect(sx,sy-cam.zoom*0.7,bd.w*cam.zoom,bd.h*cam.zoom*0.5+cam.zoom*0.7);
+  }
+}
+const mmC=document.getElementById('minimap'),mmX=mmC.getContext('2d');
+function drawMinimap(){
+  const s=140/GRID;
+  mmX.fillStyle='#3a5a2a';mmX.fillRect(0,0,140,140);
+  for(let y=0;y<GRID;y+=2)for(let x=0;x<GRID;x+=2){
+    const i=y*GRID+x;
+    if(S.terrain.h[i]<0){mmX.fillStyle='#3a5a7a';mmX.fillRect(x*s,y*s,2*s,2*s);}
+    const r=S.terrain.res[i];
+    if(r){mmX.fillStyle=r===1?'#2a5a2a':r===2?'#888':r===3?'#744':'#cc3';mmX.fillRect(x*s,y*s,2*s,2*s);}
+  }
+  for(const b of S.buildings){
+    mmX.fillStyle=S.players[b.pid].color;
+    mmX.fillRect(b.x*s,b.y*s,Math.max(2,B[b.key].w*s),Math.max(2,B[b.key].h*s));
+  }
+  for(const u of S.units){
+    if(u.key==='peasant')continue;
+    mmX.fillStyle=S.players[u.pid].color;
+    mmX.fillRect(u.x*s-1,u.y*s-1,2,2);
+  }
+  mmX.strokeStyle='#fff';mmX.strokeRect((cam.x-20)*s,(cam.y-20)*s,40*s,40*s);
+}
+mmC.addEventListener('mousedown',e=>{
+  const r=mmC.getBoundingClientRect();
+  cam.x=(e.clientX-r.left)/140*GRID;cam.y=(e.clientY-r.top)/140*GRID;
+});
+
+// ---------- UI ----------
+let uiT=0;
+function updateUI(dt){
+  uiT-=dt;if(uiT>0)return;uiT=0.25;
+  const p=S.players[0];
+  const set=(id,v)=>{$(id).textContent=Math.floor(v);};
+  set('r-gold',p.res.gold);set('r-wood',p.res.wood);set('r-stone',p.res.stone);
+  set('r-iron',p.res.iron);set('r-bread',p.res.bread);set('r-ale',p.res.ale);
+  set('r-hop',p.res.hops);
+  set('r-weap',(p.res.bows||0)+(p.res.swords||0)+(p.res.xbows||0));
+  set('r-pop',p.pop);
+  const pv=$('popval');pv.textContent=Math.round(p.popularity);
+  pv.style.background=p.popularity>=55?'#3a6a2a':p.popularity>=40?'#6a6a3a':'#7a2a2a';
+  const mm=Math.floor(S.t/60000),ss=Math.floor(S.t/1000)%60;
+  $('timebox').textContent=`${mm}:${String(ss).padStart(2,'0')} · мир: ${S.peace>90000?'∞':Math.max(0,Math.ceil((S.peace-S.t)/60000))+' мин'}`;
+  if(S.sel||S.selUnits.length)updateSelPanel();
+}
+
+// ---------- ЦИКЛ ----------
+let last=0;
+function frame(ts){
+  requestAnimationFrame(frame);
+  const rdt=Math.min(0.05,(ts-last)/1000||0.016);last=ts;
+  if(!S)return;
+  const dt=S.paused||S.over?0:rdt*speed;
+  const pan=rdt*22/cam.zoom;
+  if(keys.KeyW)cam.y-=pan; if(keys.KeyS)cam.y+=pan;
+  if(keys.KeyA)cam.x-=pan; if(keys.KeyD)cam.x+=pan;
+  const edge=30;
+  if(!mouse.down){
+    if(mouse.y<edge&&mouse.y>=0)cam.y-=pan;
+    if(mouse.y>H-edge)cam.y+=pan;
+    if(mouse.x<edge&&mouse.x>=0)cam.x-=pan;
+    if(mouse.x>W-edge)cam.x+=pan;
+  }
+  cam.x=clamp(cam.x,0,GRID);cam.y=clamp(cam.y,0,GRID);
+  if(dt>0){
+    S.t+=dt*1000;
+    econTick(dt);
+    for(const u of [...S.units])unitTick(u,dt);
+    aiTick(dt);
+    ladderTick(dt);
+    defenseTick(dt);
+    alarmTick(dt);
+    eventTick(dt);
+    Snd.music(rdt);
+  }
+  ctx2d.fillStyle='#1a2412';ctx2d.fillRect(0,0,W,H);
+  drawTerrain();
+  for(const b of S.buildings)drawBuilding(b);
+  drawLadders();
+  const us=[...S.units].sort((a,b)=>(a.y+a.x)-(b.y+b.x));
+  for(const u of us)drawUnit(u);
+  drawEffects(rdt);
+  drawSel();
+  drawGhost();
+  drawMinimap();
+  updateUI(rdt);
+}
+requestAnimationFrame(frame);
+
+// ---------- МЕНЮ ----------
+function setSpeed(s){
+  speed=s;
+  document.querySelectorAll('.sp').forEach(el=>el.classList.toggle('sel',+el.dataset.s===s));
+}
+document.querySelectorAll('.sp').forEach(el=>el.onclick=()=>setSpeed(+el.dataset.s));
+let lastOpts={map:'river',lords:1,peace:300*1000,gold:1500};
+function startGame(opts){
+  newMatch(opts);
+  lastOpts=opts;
+  $('mainmenu').classList.add('hidden');
+  $('pausemenu').classList.add('hidden');
+  $('endmenu').classList.add('hidden');
+  $('topbar').classList.remove('hidden');
+  $('buildbar').classList.remove('hidden');
+  $('speedbox').classList.remove('hidden');
+  buildCats();buildItems('Замок');
+  document.querySelector('.cat').classList.add('sel');
+  cam.x=S.players[0].baseX;cam.y=S.players[0].baseY;cam.zoom=30;
+  setSpeed(1);
+  toast('Стройте лачуги и добывайте еду. Лорд должен выжить!');
+}
+function endGame(win){
+  S.over=true;
+  $('endmenu').classList.remove('hidden');
+  $('end-title').textContent=win?'ПОБЕДА!':'ПОРАЖЕНИЕ';
+  $('end-title').style.color=win?'#d8b25a':'#b03a3a';
+  const mm=Math.floor(S.t/60000),ss=Math.floor(S.t/1000)%60;
+  $('end-text').textContent=win
+    ?`Все враждебные лорды пали. Время: ${mm}:${ss}.`
+    :'Ваш лорд погиб. Замок разрушен, корона утрачена.';
+  if(win)Snd.win();else Snd.lose();
+  // медали: за время и за уцелевшего лорда
+  if(win){
+    const lord=S.units.find(u=>u.id===S.players[0].lordId);
+    const medals=[];
+    if(S.t<15*60000)medals.push('🥇 Золото: молниеносная победа');
+    else if(S.t<25*60000)medals.push('🥈 Серебро: быстрая победа');
+    else medals.push('🥉 Бронза: победа');
+    if(lord&&lord.hp>=lord.maxHp*0.99)medals.push('🏅 Лорд не получил ни царапины');
+    else if(lord&&lord.hp>=lord.maxHp*0.5)medals.push('🎖 Лорд уцелел');
+    $('end-text').textContent+=' Медали: '+medals.join(', ');
+  }
+  // прогресс похода
+  if(win&&campaignIdx!==null){
+    try{
+      const need=campaignIdx+2; // открыта следующая миссия
+      if(need>unlockedCount())localStorage.setItem('rik-camp',need);
+      $('end-text').textContent+=campaignIdx+1<8
+        ?` Поход: открыт бой «${CAMPAIGN[campaignIdx+1].name}».`
+        :' Поход пройден полностью! 👑';
+    }catch(e){}
+  }
+  try{
+    const key='rik-best-'+S.map;
+    const best=+localStorage.getItem(key)||1e9;
+    if(win&&S.t<best){localStorage.setItem(key,S.t);$('end-text').textContent+=' 🏅 Новый рекорд карты!';}
+    else if(win)$('end-text').textContent+=` Рекорд карты: ${Math.floor(best/60000)}:${String(Math.floor(best/1000)%60).padStart(2,'0')}`;
+  }catch(e){}
+}
+$('btn-start').onclick=()=>{Snd.click();campaignIdx=null;startGame({map:'river',lords:1,peace:300*1000,gold:1500});};
+$('btn-sandbox').onclick=()=>{Snd.click();$('sandbox-opts').classList.toggle('hidden');$('campaign-list').classList.add('hidden');};
+// ---------- ПОХОД ----------
+const CAMPAIGN=[
+  {map:'river', lords:1, peace:420, gold:1500, name:'1. Долина Ульрика'},
+  {map:'hills', lords:1, peace:360, gold:1200, name:'2. Холмы Грейфорда'},
+  {map:'river', lords:2, peace:360, gold:1500, name:'3. Два флага'},
+  {map:'forest',lords:1, peace:300, gold:1000, name:'4. Лесная засада'},
+  {map:'hills', lords:2, peace:300, gold:1500, name:'5. Пастухи холмов'},
+  {map:'lakes', lords:2, peace:300, gold:1200, name:'6. Железные острова'},
+  {map:'forest',lords:3, peace:240, gold:1500, name:'7. Перевал вождей'},
+  {map:'lakes', lords:3, peace:240, gold:2000, name:'8. Корона озёр'},
+];
+let campaignIdx=null;
+function unlockedCount(){ try{return Math.min(8,(+localStorage.getItem('rik-camp')||1));}catch(e){return 1;} }
+function renderCampaign(){
+  const c=$('campaign-list');c.innerHTML='<div style="color:#d8b25a;margin-bottom:6px">Каждая победа открывает следующий бой:</div>';
+  const unlocked=unlockedCount();
+  CAMPAIGN.forEach((m,i)=>{
+    const b=document.createElement('button');
+    b.className='btn big';
+    b.style.fontSize='13px';
+    if(i<unlocked){ b.textContent='⚔ '+m.name; b.onclick=()=>{Snd.click();campaignIdx=i;startGame({map:m.map,lords:m.lords,peace:m.peace*1000,gold:m.gold});}; }
+    else{ b.textContent='🔒 '+m.name; b.disabled=true; b.style.opacity=.4; }
+    c.appendChild(b);
+  });
+}
+$('btn-campaign').onclick=()=>{Snd.click();renderCampaign();$('campaign-list').classList.toggle('hidden');$('sandbox-opts').classList.add('hidden');};
+$('btn-sandbox-go').onclick=()=>{Snd.click();campaignIdx=null;
+  startGame({map:$('o-map').value,lords:+$('o-lords').value,peace:+$('o-peace').value*1000,gold:+$('o-gold').value});};
+$('btn-pause').onclick=()=>{Snd.click();S.paused=true;$('pausemenu').classList.remove('hidden');};
+$('btn-resume').onclick=()=>{Snd.click();S.paused=false;$('pausemenu').classList.add('hidden');};
+function toMenu(){
+  $('pausemenu').classList.add('hidden');
+  $('endmenu').classList.add('hidden');
+  $('topbar').classList.add('hidden');$('buildbar').classList.add('hidden');
+  $('speedbox').classList.add('hidden');$('selfpanel').style.display='none';
+  $('mainmenu').classList.remove('hidden');S=null;
+}
+$('btn-quit').onclick=()=>{Snd.click();toMenu();};
+$('btn-again').onclick=()=>{Snd.click();startGame(lastOpts);};
+$('btn-tomenu').onclick=()=>{Snd.click();toMenu();};
+$('btn-save').onclick=()=>{Snd.click();try{localStorage.setItem('rik-save',JSON.stringify({t:S.t,map:S.map,peace:S.peace,
+  res:S.players.map(p=>p.res),blds:S.buildings.map(b=>({k:b.key,x:b.x,y:b.y,p:b.pid,hp:b.hp})),
+  units:S.units.filter(u=>u.key!=='peasant').map(u=>({k:u.key,x:u.x,y:u.y,p:u.pid,hp:u.hp}))}));toast('Матч сохранён');}catch(e){toast('Не удалось сохранить');}};
+$('btn-load').onclick=()=>{Snd.click();try{
+  const d=JSON.parse(localStorage.getItem('rik-save'));if(!d){toast('Нет сохранения');return;}
+  startGame({map:d.map,lords:1,peace:d.peace,gold:0});
+  S.t=d.t;
+  S.buildings.length=0;S.occ.fill(-1);S.units.length=0;
+  d.blds.forEach(b=>{const bd=addBuilding(b.k,b.x,b.y,b.p);bd.hp=b.hp;});
+  d.units.forEach(u=>{const nu=spawnUnit(u.k,u.x,u.y,u.p);nu.hp=u.hp;});
+  S.players.forEach((p,i)=>{Object.assign(p.res,d.res[i]);recount(i);});
+  S.players.forEach(p=>{const l=S.units.find(u=>u.pid===p.id&&u.key==='lord');p.lordId=l?l.id:0;});
+  toast('Матч загружен');
+}catch(e){toast('Ошибка загрузки');}};
+</script>
+</body>
+</html>

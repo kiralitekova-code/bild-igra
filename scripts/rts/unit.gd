@@ -3,6 +3,7 @@ extends Node3D
 ## Combat, morale and formation spacing come later.
 const BODY_HEIGHT: float = 1.1
 const ARRIVE_DISTANCE: float = 0.2
+const HIT_POINTS: Dictionary = {&"swordsman": 30, &"archer": 20, &"crossbowman": 20}
 
 var unit_type: StringName = &"swordsman"
 var hit_points: int = 30
@@ -17,6 +18,7 @@ var selected: bool = false:
 
 func setup(type: StringName, color: Color) -> void:
 	unit_type = type
+	hit_points = int(HIT_POINTS.get(type, 20))
 	var body: MeshInstance3D = MeshInstance3D.new()
 	var capsule: CapsuleMesh = CapsuleMesh.new()
 	capsule.radius = 0.28

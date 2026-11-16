@@ -22,7 +22,7 @@ func _ready() -> void:
 	unit_commander.map_grid = map_grid
 	unit_commander.construction = construction
 	map_grid.cell_selected.connect(_on_cell_selected)
-	print("[RTS Phase 3B] Unit selection and movement ready; combat is not implemented")
+	print("[RTS Phase 3C] Archer and crossbowman recruitment ready; combat is not implemented")
 
 func _on_cell_selected(cell: Vector2i, terrain_type: int) -> void:
 	if construction.active_definition != null:

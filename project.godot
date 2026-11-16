@@ -116,6 +116,14 @@ recruit_swordsman={
 "deadzone": 0.2,
 "events": [Object(InputEventKey,"physical_keycode":82)]
 }
+recruit_archer={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":70)]
+}
+recruit_crossbowman={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":71)]
+}
 
 [rendering]
 

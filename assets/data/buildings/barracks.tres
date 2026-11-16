@@ -1,0 +1,14 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/rts/building_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"barracks"
+display_name = "Казармы"
+footprint = Vector2i(3, 3)
+cost = {"wood": 40, "stone": 20}
+allowed_terrain = PackedInt32Array(0, 1)
+color = Color(0.42, 0.18, 0.12, 1)
+height = 2.8
+workers_required = 0

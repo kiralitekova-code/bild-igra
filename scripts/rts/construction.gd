@@ -14,6 +14,7 @@ const IRON_MINE: Definition = preload("res://assets/data/buildings/iron_mine.tre
 const WEAPONSMITH: Definition = preload("res://assets/data/buildings/weaponsmith.tres")
 const BOW_WORKSHOP: Definition = preload("res://assets/data/buildings/bow_workshop.tres")
 const CROSSBOW_WORKSHOP: Definition = preload("res://assets/data/buildings/crossbow_workshop.tres")
+const BARRACKS: Definition = preload("res://assets/data/buildings/barracks.tres")
 const FOOD_INTERVAL: float = 10.0
 const SOCIETY_INTERVAL: float = 10.0
 
@@ -46,7 +47,7 @@ func _ready() -> void:
 	preview.material_override = preview_material
 	preview.visible = false
 	add_child(preview)
-	print("[RTS Build] Ready: 1=stockpile, 2=wheat farm, 3=mill, 4=bakery, 5=granary, 6=treasury, 7=lumbermill, 8=quarry, 9=iron mine, 0=weaponsmith, B=bow workshop, C=crossbow workshop, Esc/RMB=cancel; resources=%s" % resources)
+	print("[RTS Build] Ready: 1=stockpile, 2=wheat farm, 3=mill, 4=bakery, 5=granary, 6=treasury, 7=lumbermill, 8=quarry, 9=iron mine, 0=weaponsmith, B=bow workshop, C=crossbow workshop, V=barracks, Esc/RMB=cancel; resources=%s" % resources)
 	print("[RTS Food] Residents=%d; waiting for granary; interval=10s" % worker_pool)
 	print("[RTS Society] Popularity=50; tax=0; T changes tax; interval=10s")
 	print("[RTS Population] Residents=%d capacity=%d; migration thresholds: <40 leave, >=60 arrive" % [worker_pool, population_capacity])
@@ -87,6 +88,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("build_crossbow_workshop"):
 		_begin_placement(CROSSBOW_WORKSHOP)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("build_barracks"):
+		_begin_placement(BARRACKS)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("cycle_tax"):
 		tax_rate = (tax_rate + 1) % 3

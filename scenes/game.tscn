@@ -1,10 +1,11 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/game.gd" id="1_game"]
 [ext_resource type="Script" path="res://scripts/rts/map_grid.gd" id="2_map"]
 [ext_resource type="PackedScene" path="res://scenes/rts_camera.tscn" id="3_camera"]
 [ext_resource type="Script" path="res://scripts/rts/construction.gd" id="4_build"]
 [ext_resource type="Script" path="res://scripts/rts/recruitment.gd" id="5_recruit"]
+[ext_resource type="Script" path="res://scripts/rts/unit_commander.gd" id="6_commander"]
 
 [sub_resource type="Environment" id="Environment_map"]
 background_mode = 1
@@ -35,3 +36,6 @@ script = ExtResource("4_build")
 
 [node name="Recruitment" type="Node3D" parent="."]
 script = ExtResource("5_recruit")
+
+[node name="UnitCommander" type="Node3D" parent="."]
+script = ExtResource("6_commander")
